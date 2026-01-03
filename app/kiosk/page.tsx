@@ -130,7 +130,7 @@ export default function KioskPage() {
           <section className="px-6 py-16">
             <h3 className="mb-8 text-2xl font-semibold">Featured Products</h3>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {products.map((p, index) => (
                 <motion.div
                   key={p.id}
