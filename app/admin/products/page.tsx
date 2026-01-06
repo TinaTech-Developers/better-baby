@@ -1,40 +1,48 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { FiPlus, FiEdit, FiTrash2 } from "react-icons/fi";
 import AdminLayout from "../_components/layout";
+import { ProductColor } from "@/models/Product";
+interface IProduct {
+  _id: string;
+  name: string;
+  price: number;
+  currency: string;
+  description: string;
+  category: string;
+  sizes: string[];
+  colors: ProductColor[];
+  images: Record<ProductColor, string[]>;
+  createdAt: string;
+  updatedAt: string;
+}
 
-/* ---------------- MOCK DATA ---------------- */
-
-const products = [
-  {
-    id: "1",
-    name: "Running Sneakers",
-    category: "Shoes",
-    price: 120,
-    stock: 8,
-    image:
-      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80",
-  },
-  {
-    id: "2",
-    name: "Leather Handbag",
-    category: "Bags",
-    price: 250,
-    stock: 3,
-    image:
-      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&q=80",
-  },
-];
 
 /* ---------------- PAGE ---------------- */
 
 export default function AdminProductsPage() {
   const [openAdd, setOpenAdd] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [productsList, setProductsList] = useState<IProduct[]>([]); // ✅ here
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/products");
+        const data = await response.json();
+        setProductsList(data.products); 
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <AdminLayout>
@@ -53,16 +61,19 @@ export default function AdminProductsPage() {
 
       {/* GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-        {products.map((product) => (
+        {productsList?.map((product) => (
           <motion.div
-            key={product.id}
+            key={product._id}
             whileHover={{ scale: 1.02 }}
             className="bg-[#121212] rounded-2xl border border-white/10 overflow-hidden"
           >
             {/* IMAGE */}
-            <div className="relative h-48">
+            <div className="relative h-48 w-full">
               <Image
-                src={product.image}
+                src={
+                  Object.values(product.images).flat().at(0) ||
+                  "/placeholder.png"
+                }
                 alt={product.name}
                 fill
                 className="object-cover"
@@ -77,14 +88,14 @@ export default function AdminProductsPage() {
               <div className="mt-3 flex justify-between items-center">
                 <p className="text-xl font-bold">${product.price}</p>
                 <span className="text-sm text-gray-400">
-                  Stock: {product.stock}
+                  Stock: {product.sizes.length * product.colors.length}
                 </span>
               </div>
 
               {/* ACTIONS */}
               <div className="flex gap-2 mt-5">
                 <Link
-                  href={`/admin/products/${product.id}/edit`}
+                  href={`/admin/products/${product._id}/edit`}
                   className="flex-1 flex items-center justify-center gap-2 bg-[#1a1a1a] rounded-xl py-2 text-sm hover:bg-white/10 transition"
                 >
                   <FiEdit />
@@ -92,7 +103,7 @@ export default function AdminProductsPage() {
                 </Link>
 
                 <button
-                  onClick={() => setDeleteId(product.id)}
+                  onClick={() => setDeleteId(product._id)}
                   className="rounded-xl bg-red-600/20 hover:bg-red-600 px-3 py-2 transition text-red-400 hover:text-white"
                 >
                   <FiTrash2 />

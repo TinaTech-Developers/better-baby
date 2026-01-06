@@ -15,7 +15,10 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0b0b0b] px-4">
+    <div
+      className="min-h-screen flex items-center justify-center bg-[#0B0B0B]
+ px-4"
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -79,7 +82,7 @@ export default function AdminLoginPage() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             type="submit"
-            className="w-full bg-white text-black py-3 rounded-xl font-semibold text-sm hover:bg-gray-200 transition"
+            className="w-full bg-white text-black py-3 rounded-xl font-semibold text-sm hover:bg-[#A89078] transition"
           >
             Login
           </motion.button>

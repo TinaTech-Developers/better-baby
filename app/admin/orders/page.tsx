@@ -89,7 +89,10 @@ export default function AdminOrdersPage() {
 
       <div className="rounded-2xl border border-white/10 overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-[#0b0b0b] text-gray-400">
+          <thead
+            className="bg-[#0B0B0B]
+ text-gray-400"
+          >
             <tr>
               <th className="px-5 py-4 text-left">Order</th>
               <th className="px-5 py-4 text-left">Customer</th>

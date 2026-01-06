@@ -93,7 +93,10 @@ export default function AdminUsersPage() {
         {/* Users Table */}
         <div className="overflow-x-auto rounded-2xl border border-white/10 mt-4">
           <table className="w-full text-sm">
-            <thead className="bg-[#0b0b0b] text-gray-400">
+            <thead
+              className="bg-[#0B0B0B]
+ text-gray-400"
+            >
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
                 <th className="px-5 py-3 text-left">Email</th>

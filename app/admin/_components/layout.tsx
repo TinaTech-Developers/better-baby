@@ -26,7 +26,10 @@ export default function AdminLayout({
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#0b0b0b] text-white">
+    <div
+      className="flex min-h-screen bg-[#0B0B0B]
+ text-white"
+    >
       {/* Sidebar */}
       <motion.aside
         initial={false}

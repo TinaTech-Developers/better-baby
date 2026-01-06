@@ -4,6 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import AdminLayout from "../../_components/layout";
+import { ImageUploadButton } from "./components/ImageUploadButton";
+import { ClientUploadedFileData } from "uploadthing/types";
+import { UploadButton } from "@uploadthing/react";
+import { OurFileRouter } from "@/app/api/uploadthing/core";
 
 /* ---------------- TYPES ---------------- */
 type ProductColor =
@@ -33,6 +37,7 @@ const ALL_COLORS: ProductColor[] = [
 
 export default function NewProductPage() {
   const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
   const [price, setPrice] = useState<number>(0);
   const [currency, setCurrency] = useState("USD");
   const [description, setDescription] = useState("");
@@ -64,19 +69,57 @@ export default function NewProductPage() {
     }));
   };
 
-  const handleSubmit = () => {
-    const product = {
-      name,
-      price,
-      currency,
-      description,
-      sizes,
-      colors,
-      images,
-    };
+  const handleSubmit = async () => {
+    try {
+      const product = {
+        name,
+        category: category || "Uncategorized",
+        price,
+        currency,
+        description,
+        sizes,
+        colors,
+        images,
+      };
 
-    console.log("NEW PRODUCT:", product);
-    alert("Product created (check console)");
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(product),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error?.error || "Failed to create product");
+      }
+
+      const data = await res.json();
+      alert(`Product created successfully: ${data.name}`);
+      console.log("Created Product:", data);
+
+      // Reset form
+      setName("");
+      setCategory("");
+      setPrice(0);
+      setCurrency("USD");
+      setDescription("");
+      setSizes([]);
+      setColors([]);
+      setImages({
+        Red: [],
+        Blue: [],
+        Black: [],
+        White: [],
+        Brown: [],
+        Beige: [],
+        Silver: [],
+        "Rose Gold": [],
+        "Dark Blue": [],
+      });
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message);
+    }
   };
 
   return (
@@ -100,7 +143,15 @@ export default function NewProductPage() {
               placeholder="Product name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl bg-[#0b0b0b] border border-white/10 px-4 py-3"
+              className="w-full rounded-xl bg-[#0B0B0B]
+ border border-white/10 px-4 py-3"
+            />
+            <input
+              placeholder="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full rounded-xl bg-[#0B0B0B]
+ border border-white/10 px-4 py-3"
             />
 
             <textarea
@@ -108,7 +159,8 @@ export default function NewProductPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              className="w-full rounded-xl bg-[#0b0b0b] border border-white/10 px-4 py-3"
+              className="w-full rounded-xl bg-[#0B0B0B]
+ border border-white/10 px-4 py-3"
             />
 
             <div className="flex gap-4">
@@ -117,13 +169,15 @@ export default function NewProductPage() {
                 placeholder="Price"
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
-                className="flex-1 rounded-xl bg-[#0b0b0b] border border-white/10 px-4 py-3"
+                className="flex-1 rounded-xl bg-[#0B0B0B]
+ border border-white/10 px-4 py-3"
               />
               <input
                 placeholder="Currency"
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-32 rounded-xl bg-[#0b0b0b] border border-white/10 px-4 py-3"
+                className="w-32 rounded-xl bg-[#0B0B0B]
+ border border-white/10 px-4 py-3"
               />
             </div>
           </section>
@@ -141,7 +195,8 @@ export default function NewProductPage() {
                     .filter(Boolean)
                 )
               }
-              className="w-full rounded-xl bg-[#0b0b0b] border border-white/10 px-4 py-3"
+              className="w-full rounded-xl bg-[#0B0B0B]
+ border border-white/10 px-4 py-3"
             />
           </section>
 
@@ -170,8 +225,9 @@ export default function NewProductPage() {
             {colors.map((color) => (
               <div key={color} className="space-y-3">
                 <p className="text-sm text-gray-400">{color}</p>
-                <ImageInput
-                  onAdd={(url) => addImage(color, url)}
+                <UploadThingInput
+                  color={color}
+                  addImage={addImage}
                   images={images[color]}
                 />
               </div>
@@ -191,45 +247,35 @@ export default function NewProductPage() {
   );
 }
 
-/* ---------------- IMAGE INPUT ---------------- */
-
-function ImageInput({
-  onAdd,
+/* ---------------- UPLOADTHING INPUT ---------------- */
+function UploadThingInput({
+  color,
+  addImage,
   images,
 }: {
-  onAdd: (url: string) => void;
+  color: ProductColor;
+  addImage: (color: ProductColor, url: string) => void;
   images: string[];
 }) {
-  const [url, setUrl] = useState("");
-
   return (
-    <div>
-      <div className="flex gap-3">
-        <input
-          placeholder="Image URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          className="flex-1 rounded-xl bg-[#0b0b0b] border border-white/10 px-4 py-2"
-        />
-        <button
-          onClick={() => {
-            onAdd(url);
-            setUrl("");
-          }}
-          className="rounded-xl bg-[#1a1a1a] px-4"
-        >
-          Add
-        </button>
-      </div>
+    <div className="space-y-3">
+      <ImageUploadButton
+        className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl"
+        onClientUploadComplete={(res) => {
+          if (!res) return;
+          res.forEach((file) => addImage(color, file.url));
+        }}
+        onUploadError={(err) => alert(`Upload failed: ${err.message}`)}
+      />
 
       {images.length > 0 && (
-        <div className="mt-3 flex gap-3">
+        <div className="flex gap-3">
           {images.map((img) => (
             <div
               key={img}
               className="relative h-16 w-16 rounded-lg overflow-hidden"
             >
-              <Image src={img} alt="" fill className="object-cover" />
+              <img src={img} alt="" className="h-full w-full object-cover" />
             </div>
           ))}
         </div>
