@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
+
 interface Props {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -21,13 +22,9 @@ export default function TopNavigation({
   onCartClick,
 }: Props) {
   return (
-    <header
-      className="sticky top-0 z-30 bg-[#000000]
-/90 backdrop-blur border-b border-white/10"
-    >
+    <header className="sticky top-0 z-30 bg-[#000000]/90 backdrop-blur border-b border-white/10">
       <div className="flex items-center gap-8 px-6 py-4 max-w-7xl mx-auto">
         {/* LOGO */}
-
         <Link
           href="/kiosk"
           onClick={() => setView("home")}
@@ -43,7 +40,7 @@ export default function TopNavigation({
         </Link>
 
         {/* MAIN NAV */}
-        <nav className="hidden lg:flex gap-6 text-sm text-[#a59186] ">
+        <nav className="hidden lg:flex gap-6 text-sm text-[#a59186]">
           {[
             // "Strollers",
             // "Car Seats",
@@ -66,8 +63,8 @@ export default function TopNavigation({
           ))}
         </nav>
 
-        {/* 🔍 SEARCH — SAME AS YOUR HEADER */}
-        <div className="relative ml-auto w-full max-w-1/3">
+        {/* SEARCH */}
+        <div className="relative ml-auto w-full max-w-[30%]">
           <input
             value={searchTerm}
             onChange={(e) => {
@@ -80,8 +77,11 @@ export default function TopNavigation({
         </div>
 
         {/* ICONS */}
-        <div className="hidden lg:flex gap-4 text-gray-400 text-lg">
+        <div className="flex gap-4 text-gray-400 text-lg ml-4">
+          {/* ❤️ Placeholder for future */}
           {/* <span className="cursor-pointer hover:text-white">❤️</span> */}
+
+          {/* CART ICON — always visible */}
           <div
             onClick={onCartClick}
             className="relative cursor-pointer text-gray-400 hover:text-white transition"
