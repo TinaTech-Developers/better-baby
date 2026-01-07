@@ -1,166 +1,275 @@
 "use client";
 
 import AdminLayout from "../_components/layout";
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 /* ---------------- TYPES ---------------- */
 type PaymentMethod = "Cash" | "Card";
-type OrderStatus =
-  | "Pending"
-  | "Approved"
-  | "Paid"
-  | "Shipped"
-  | "Delivered"
-  | "Cancelled";
+type OrderStatus = "PENDING_PAYMENT" | "PAID" | "FAILED";
 
 interface OrderItem {
+  productId: string;
   name: string;
   quantity: number;
   price: number;
 }
 
-interface Order {
-  id: string;
-  customer: string;
+interface Customer {
+  fullName: string;
+  email: string;
   phone: string;
-  paymentMethod: PaymentMethod;
+}
+interface Order {
+  _id: string;
+  orderId: string;
+  customer: Customer;
+  items: OrderItem[];
+  subtotal: number;
+  vat: number;
   total: number;
   currency: string;
   status: OrderStatus;
-  date: string;
-  items: OrderItem[];
+  paynowReference: string;
+  createdAt: string;
+  notes?: string;
+  paymentMethod?: "Cash" | "Card"; // <-- added
 }
 
-/* ---------------- MOCK DATA ---------------- */
-
-const initialOrders: Order[] = [
-  {
-    id: "ORD-001",
-    customer: "John Doe",
-    phone: "+263 77 123 4567",
-    paymentMethod: "Cash",
-    total: 240,
-    currency: "USD",
-    status: "Pending",
-    date: "2025-01-05",
-    items: [{ name: "Running Sneakers", quantity: 2, price: 120 }],
-  },
-  {
-    id: "ORD-002",
-    customer: "Sarah Smith",
-    phone: "+263 78 555 8844",
-    paymentMethod: "Card",
-    total: 300,
-    currency: "USD",
-    status: "Paid",
-    date: "2025-01-06",
-    items: [{ name: "Smart Watch", quantity: 1, price: 300 }],
-  },
-];
-
 /* ---------------- PAGE ---------------- */
-
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "All">("All");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const approveCashOrder = (id: string) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, status: "Approved" } : o))
-    );
+  /* ---------------- FETCH ORDERS ---------------- */
+  useEffect(() => {
+    fetch("/api/admin/orders")
+      .then((res) => res.json())
+      .then((data) => {
+        const ordersArray = Array.isArray(data) ? data : data.orders ?? [];
+        setOrders(ordersArray);
+        setFilteredOrders(ordersArray);
+      })
+      .catch((err) => {
+        console.error(err);
+        setOrders([]);
+        setFilteredOrders([]);
+      });
+  }, []);
+
+  // ---------------- DELETE ORDER ----------------//
+  const handleDeleteOrder = async (id: string) => {
+    const confirmed = confirm("Are you sure you want to delete this order?");
+    if (!confirmed) return;
+
+    const deletePromise = fetch(`/api/admin/orders/${id}`, {
+      method: "DELETE",
+    });
+
+    toast.promise(deletePromise, {
+      pending: "Deleting order...",
+      success: "Order deleted successfully",
+      error: "Failed to delete order",
+    });
+
+    try {
+      const res = await deletePromise;
+      if (!res.ok) return;
+
+      setOrders((prev) => prev.filter((o) => o._id !== id));
+      setFilteredOrders((prev) => prev.filter((o) => o._id !== id));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const statusBadge = (status: OrderStatus) => {
-    const styles: Record<OrderStatus, string> = {
-      Pending: "bg-yellow-600/20 text-yellow-400",
-      Approved: "bg-blue-600/20 text-blue-400",
-      Paid: "bg-green-600/20 text-green-400",
-      Shipped: "bg-purple-600/20 text-purple-400",
-      Delivered: "bg-emerald-600/20 text-emerald-400",
-      Cancelled: "bg-red-600/20 text-red-400",
-    };
-    return styles[status];
+  /* ---------------- SEARCH & FILTER ---------------- */
+  useEffect(() => {
+    let filtered = Array.isArray(orders) ? [...orders] : [];
+    if (search) {
+      filtered = filtered.filter(
+        (o) =>
+          o.customer.fullName.toLowerCase().includes(search.toLowerCase()) ||
+          o.orderId.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    if (statusFilter !== "All") {
+      filtered = filtered.filter((o) => o.status === statusFilter);
+    }
+    setFilteredOrders(filtered);
+  }, [search, statusFilter, orders]);
+
+  /* ---------------- APPROVE / MARK AS PAID ---------------- */
+  const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      const res = await fetch(`/api/orders/update/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        setOrders((prev) =>
+          prev.map((o) => (o.orderId === orderId ? { ...o, status } : o))
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /* ---------------- RESEND PAYNOW LINK ---------------- */
+  const resendPayNowLink = async (order: Order) => {
+    const resendPromise = fetch(`/api/paynow/resend/${order.orderId}`, {
+      method: "POST",
+    }).then((res) => {
+      if (!res.ok) throw new Error();
+      return res.json();
+    });
+
+    toast.promise(resendPromise, {
+      pending: "Resending PayNow link...",
+      success: "PayNow link resent successfully",
+      error: "Failed to resend PayNow link",
+    });
+
+    await resendPromise;
   };
 
   return (
     <AdminLayout>
-      <h2 className="text-3xl font-bold mb-8">Orders</h2>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar
+        theme="dark"
+      />
+      <h2 className="text-3xl font-bold mb-6">Orders Dashboard</h2>
 
+      {/* SEARCH + FILTER */}
+      <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search by customer or order ID..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 px-4 py-2 rounded-2xl bg-[#0B0B0B] border border-white/10 text-white placeholder-gray-500"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as any)}
+          className="px-4 py-2 rounded-2xl bg-[#0B0B0B] border border-white/10 text-white"
+        >
+          <option value="All">All Statuses</option>
+          <option value="PENDING_PAYMENT">Pending</option>
+          <option value="PAID">Paid</option>
+          <option value="FAILED">Failed</option>
+        </select>
+      </div>
+
+      {/* ORDERS TABLE */}
       <div className="rounded-2xl border border-white/10 overflow-hidden">
         <table className="w-full text-sm">
-          <thead
-            className="bg-[#0B0B0B]
- text-gray-400"
-          >
+          <thead className="bg-[#0B0B0B] text-gray-400">
             <tr>
-              <th className="px-5 py-4 text-left">Order</th>
-              <th className="px-5 py-4 text-left">Customer</th>
-              <th className="px-5 py-4 text-left">Payment</th>
-              <th className="px-5 py-4 text-left">Total</th>
-              <th className="px-5 py-4 text-left">Status</th>
-              <th className="px-5 py-4 text-right">Actions</th>
+              <th className="px-5 py-3 text-left">Order</th>
+              <th className="px-5 py-3 text-left">Customer</th>
+              <th className="px-5 py-3 text-left">Payment</th>
+              <th className="px-5 py-3 text-left">Total</th>
+              <th className="px-5 py-3 text-left">Status</th>
+              <th className="px-5 py-3 text-right">Actions</th>
             </tr>
           </thead>
-
           <tbody>
-            {orders.map((order) => (
-              <motion.tr
-                key={order.id}
-                whileHover={{ backgroundColor: "rgba(255,255,255,0.03)" }}
-                className="border-t border-white/10"
-              >
-                <td className="px-5 py-4 font-medium">{order.id}</td>
+            {filteredOrders?.length > 0 ? (
+              filteredOrders.map((order) => (
+                <motion.tr
+                  key={order._id}
+                  whileHover={{ backgroundColor: "rgba(255,255,255,0.03)" }}
+                  className="border-t border-white/10"
+                >
+                  <td className="px-5 py-3 font-medium">{order.orderId}</td>
+                  <td className="px-5 py-3">
+                    <p>{order.customer.fullName}</p>
+                    <p className="text-xs text-gray-500">
+                      {order.customer.phone}
+                    </p>
+                  </td>
+                  <td className="px-5 py-3">
+                    {order.paymentMethod || "PayNow"}
+                  </td>
+                  <td className="px-5 py-3 font-semibold text-purple-400">
+                    {order.total} {order.currency}
+                  </td>
+                  <td className="px-5 py-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        order.status === "PENDING_PAYMENT"
+                          ? "bg-yellow-600/20 text-yellow-400"
+                          : order.status === "PAID"
+                          ? "bg-green-600/20 text-green-400"
+                          : "bg-red-600/20 text-red-400"
+                      }`}
+                    >
+                      {order.status.replace("_", " ")}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-right space-x-2">
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleDeleteOrder(order._id)}
+                      className="rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
 
-                <td className="px-5 py-4">
-                  <p>{order.customer}</p>
-                  <p className="text-xs text-gray-500">{order.phone}</p>
-                </td>
-
-                <td className="px-5 py-4">
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs">
-                    {order.paymentMethod}
-                  </span>
-                </td>
-
-                <td className="px-5 py-4 font-semibold">
-                  ${order.total} {order.currency}
-                </td>
-
-                <td className="px-5 py-4">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${statusBadge(
-                      order.status
-                    )}`}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-
-                <td className="px-5 py-4 text-right space-x-3">
-                  <button
-                    onClick={() => setSelectedOrder(order)}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    View
-                  </button>
-
-                  {order.paymentMethod === "Cash" &&
-                    order.status === "Pending" && (
+                    {order.status === "PENDING_PAYMENT" && (
                       <button
-                        onClick={() => approveCashOrder(order.id)}
-                        className="rounded-full bg-white px-4 py-1 text-xs font-semibold text-black"
+                        onClick={() => resendPayNowLink(order)}
+                        className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-black"
                       >
-                        Approve
+                        Resend PayNow
                       </button>
                     )}
+
+                    {order.status === "PENDING_PAYMENT" &&
+                      order.paymentMethod === "Cash" && (
+                        <button
+                          onClick={() =>
+                            updateOrderStatus(order.orderId, "PAID")
+                          }
+                          className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white"
+                        >
+                          Approve
+                        </button>
+                      )}
+                  </td>
+                </motion.tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={6} className="text-center text-gray-500 py-4">
+                  No orders found
                 </td>
-              </motion.tr>
-            ))}
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
+      {/* MODAL */}
       {selectedOrder && (
         <OrderModal
           order={selectedOrder}
@@ -171,39 +280,56 @@ export default function AdminOrdersPage() {
   );
 }
 
-/* ---------------- ORDER VIEW MODAL ---------------- */
-
+/* ---------------- ORDER MODAL ---------------- */
 function OrderModal({ order, onClose }: { order: Order; onClose: () => void }) {
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
     if (!receiptRef.current) return;
 
-    const win = window.open("", "", "width=300,height=600");
+    const win = window.open("", "", "width=400,height=700");
     if (!win) return;
 
     win.document.write(`
       <html>
         <head>
-          <title>Receipt ${order.id}</title>
+          <title>Receipt ${order.orderId}</title>
           <style>
-            body { margin: 0; font-family: Arial; }
-            .receipt { width: 220px; padding: 12px; font-size: 11px; }
+            body { font-family: Arial; margin: 0; padding: 16px; background: #fff; color: #000; }
             .center { text-align: center; }
-            .row { display: flex; justify-content: space-between; margin: 4px 0; }
             .divider { border-top: 1px dashed #000; margin: 8px 0; }
             .bold { font-weight: bold; }
           </style>
         </head>
-        <body>
-          ${receiptRef.current.innerHTML}
-        </body>
+        <body>${receiptRef.current.innerHTML}</body>
       </html>
     `);
-
     win.document.close();
     win.print();
     win.close();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!receiptRef.current) return;
+
+    // Convert the receipt div into a canvas
+    const canvas = await html2canvas(receiptRef.current, {
+      scale: 2,
+    } as any);
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "pt",
+      format: "a4",
+    });
+
+    // Scale image to fit page
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`${order.orderId}_receipt.pdf`);
   };
 
   return (
@@ -223,78 +349,60 @@ function OrderModal({ order, onClose }: { order: Order; onClose: () => void }) {
 
         {/* DETAILS */}
         <div className="p-6 space-y-4">
-          <div className="text-sm text-gray-400">
-            <p>Order ID: {order.id}</p>
-            <p>Date: {order.date}</p>
-            <p>Customer: {order.customer}</p>
-            <p>Phone: {order.phone}</p>
-            <p>Payment: {order.paymentMethod}</p>
-          </div>
+          <div ref={receiptRef}>
+            <div className="text-sm text-gray-400">
+              <p>Order ID: {order.orderId}</p>
+              <p>Date: {new Date(order.createdAt).toLocaleString()}</p>
+              <p>Customer: {order.customer.fullName}</p>
+              <p>Email: {order.customer.email}</p>
+              <p>Phone: {order.customer.phone}</p>
+            </div>
 
-          <div className="border-t border-white/10 pt-4 space-y-2">
-            {order.items.map((item, i) => (
-              <div key={i} className="flex justify-between text-sm">
-                <span>
-                  {item.quantity} × {item.name}
-                </span>
-                <span>${item.price * item.quantity}</span>
-              </div>
-            ))}
-          </div>
+            <div className="border-t border-white/10 pt-4 space-y-2">
+              {order.items.map((item, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span>
+                    {item.quantity} × {item.name}
+                  </span>
+                  <span>
+                    {order.currency} {item.price * item.quantity}
+                  </span>
+                </div>
+              ))}
+            </div>
 
-          <div className="flex justify-between font-semibold pt-4 border-t border-white/10">
-            <span>Total</span>
-            <span>
-              ${order.total} {order.currency}
-            </span>
-          </div>
-        </div>
-
-        {/* ACTIONS */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/10">
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
-            Close
-          </button>
-          <button
-            onClick={handlePrint}
-            className="rounded-full bg-white px-6 py-2 text-sm font-semibold text-black"
-          >
-            Print Receipt
-          </button>
-        </div>
-
-        {/* HIDDEN RECEIPT */}
-        <div className="hidden">
-          <div ref={receiptRef} className="receipt">
-            <div className="center bold">YOUR COMPANY</div>
-            <div className="center">+263 77 000 0000</div>
-            <div className="divider" />
-
-            <div>Order: {order.id}</div>
-            <div>Customer: {order.customer}</div>
-
-            <div className="divider" />
-
-            {order.items.map((item, i) => (
-              <div key={i} className="row">
-                <span>
-                  {item.quantity} × {item.name}
-                </span>
-                <span>
-                  {order.currency} {item.price * item.quantity}
-                </span>
-              </div>
-            ))}
-
-            <div className="divider" />
-            <div className="row bold">
+            <div className="flex justify-between font-semibold pt-4 border-t border-white/10">
               <span>Total</span>
               <span>
                 {order.currency} {order.total}
               </span>
             </div>
 
-            <div className="center">Thank you!</div>
+            {order.status === "PENDING_PAYMENT" && (
+              <div className="mt-4 flex justify-center">
+                <QRCodeSVG
+                  value={`https://www.paynow.co.za/pay?reference=${order.paynowReference}`}
+                  size={120}
+                  fgColor="#00FF88"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* ACTIONS */}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={handlePrint}
+              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black"
+            >
+              Print
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              className="rounded-full bg-purple-500 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Download PDF
+            </button>
           </div>
         </div>
       </motion.div>

@@ -2,7 +2,10 @@
 
 import AdminLayout from "../../../_components/layout";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 type UserRole = "Admin" | "Staff" | "Customer";
 type UserStatus = "Active" | "Inactive";
@@ -13,16 +16,8 @@ interface User {
   email: string;
   role: UserRole;
   status: UserStatus;
+  password?: string; // only when resetting password
 }
-
-// Mock fetch
-const users: User[] = Array.from({ length: 20 }, (_, i) => ({
-  id: `U${String(i + 1).padStart(3, "0")}`,
-  name: `User ${i + 1}`,
-  email: `user${i + 1}@example.com`,
-  role: ["Admin", "Staff", "Customer"][i % 3] as UserRole,
-  status: i % 2 === 0 ? "Active" : "Inactive",
-}));
 
 const loggedInUserId = "U001";
 
@@ -31,8 +26,49 @@ export default function EditUserPage() {
   const router = useRouter();
   const id = params?.id as string;
 
-  const userData = users.find((u) => u.id === id);
-  const [user, setUser] = useState(userData);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+
+  // ---------------- FETCH USER ---------------- //
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`/api/admin/users/${id}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+          toast.error(data.error || "Failed to fetch user");
+          setUser(null);
+        } else {
+          setUser({
+            id: data.user._id,
+            name: data.user.name,
+            email: data.user.email,
+            role: data.user.role,
+            status: data.user.status,
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [id]);
+
+  if (loading)
+    return (
+      <AdminLayout>
+        <p className="text-white p-10">Loading user...</p>
+      </AdminLayout>
+    );
 
   if (!user)
     return (
@@ -48,10 +84,33 @@ export default function EditUserPage() {
       status: user.status === "Active" ? "Inactive" : "Active",
     });
 
-  const handleSave = () => {
-    // Mock save
-    console.log("Saved user:", user);
-    alert("User updated successfully!");
+  // ---------------- SAVE USER ---------------- //
+  const handleSave = async () => {
+    try {
+      const body = { ...user }; // now password is allowed
+      if (!newPassword) delete body.password;
+      else body.password = newPassword;
+
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to update user");
+        return;
+      }
+
+      toast.success("User updated successfully!");
+      setNewPassword("");
+      setShowPassword(false);
+      router.back();
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong");
+    }
   };
 
   return (
@@ -125,15 +184,53 @@ export default function EditUserPage() {
             </div>
           </div>
 
-          {/* Security */}
-          <div className="bg-[#121212] rounded-2xl border border-white/10 p-6 shadow-lg hover:shadow-white/10 transition space-y-4">
+          {/* Security / Reset Password */}
+          <div className="bg-[#121212] rounded-2xl border border-red-800 p-6 shadow-lg hover:shadow-white/10 transition space-y-4">
             <h3 className="text-xl font-semibold mb-2">Security</h3>
-            <p className="text-gray-400 text-sm">
-              Reset or update the user's password and authentication settings.
+            <p className="text-gray-400 text-sm mb-2">
+              Reset or update the user's password.
             </p>
-            <button className="w-full bg-white text-black px-4 py-2 rounded-lg font-semibold hover:scale-105 transition">
-              Reset Password
-            </button>
+
+            {showPassword ? (
+              <>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"} // toggle type
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-white/10 outline-none hover:border-white transition pr-10"
+                  />
+                  {/* Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    {showPassword ? <FiEyeOff /> : <FiEye />}
+                  </button>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setShowPassword(false);
+                      setNewPassword("");
+                    }}
+                    className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 text-white"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowPassword(true)}
+                className="w-full bg-white text-black px-4 py-2 rounded-lg font-semibold hover:scale-105 transition"
+              >
+                Reset Password
+              </button>
+            )}
           </div>
         </div>
 
@@ -153,6 +250,9 @@ export default function EditUserPage() {
           </button>
         </div>
       </div>
+
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </AdminLayout>
   );
 }

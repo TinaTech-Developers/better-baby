@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FiHome,
   FiBox,
@@ -11,12 +12,16 @@ import {
   FiShoppingCart,
 } from "react-icons/fi";
 
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const router = useRouter();
 
   const menuItems = [
     { name: "Dashboard", icon: <FiHome />, href: "/admin/home" },
@@ -25,11 +30,21 @@ export default function AdminLayout({
     { name: "Users", icon: <FiUsers />, href: "/admin/users" },
   ];
 
+  // ---------------- LOGOUT ---------------- //
+  const handleLogout = () => {
+    try {
+      // Remove auth token from localStorage or cookie
+      localStorage.removeItem("adminToken"); // adjust if you use cookies
+      toast.success("Logged out successfully");
+      router.push("/admin");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to logout");
+    }
+  };
+
   return (
-    <div
-      className="flex min-h-screen bg-[#0B0B0B]
- text-white"
-    >
+    <div className="flex min-h-screen bg-[#0B0B0B] text-white">
       {/* Sidebar */}
       <motion.aside
         initial={false}
@@ -72,8 +87,12 @@ export default function AdminLayout({
           ))}
         </nav>
 
+        {/* Logout */}
         <div className="p-4 border-t border-white/10">
-          <button className="flex items-center gap-4 w-full hover:bg-white/10 px-4 py-2 rounded-md transition">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-4 w-full hover:bg-white/10 px-4 py-2 rounded-md transition"
+          >
             <FiLogOut className="text-xl shrink-0" />
             <span
               className={`transition-opacity ${
@@ -83,6 +102,11 @@ export default function AdminLayout({
               Logout
             </span>
           </button>
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar
+          />
         </div>
       </motion.aside>
 

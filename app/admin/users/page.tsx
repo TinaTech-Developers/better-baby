@@ -2,8 +2,11 @@
 
 import AdminLayout from "../_components/layout";
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
+import { motion } from "framer-motion";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 type UserRole = "Admin" | "Staff" | "Customer";
 type UserStatus = "Active" | "Inactive";
@@ -18,19 +21,19 @@ interface User {
 
 const loggedInUserId = "U001";
 
-const initialUsers: User[] = Array.from({ length: 2 }, (_, i) => ({
-  id: `U${String(i + 1).padStart(3, "0")}`,
-  name: `User ${i + 1}`,
-  email: `user${i + 1}@example.com`,
-  role: ["Admin", "Staff", "Customer"][i % 3] as UserRole,
-  status: i % 2 === 0 ? "Active" : "Inactive",
-}));
-
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<UserRole | "All">("All");
   const [filterStatus, setFilterStatus] = useState<UserStatus | "All">("All");
+
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [newUser, setNewUser] = useState<Omit<User, "id">>({
+    name: "",
+    email: "",
+    role: "Admin",
+    status: "Active",
+  });
 
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
@@ -53,12 +56,73 @@ export default function AdminUsersPage() {
     );
   };
 
+  // ---------------- FETCH USERS ---------------- //
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch("/api/admin/users");
+        const data = await res.json();
+        if (res.ok) {
+          setUsers(
+            data.users.map((u: any) => ({
+              id: u._id,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+              status: u.status,
+            }))
+          );
+        } else {
+          toast.error(data.error || "Failed to fetch users");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Something went wrong");
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // ---------------- CREATE USER ---------------- //
+  const handleCreateUser = async () => {
+    if (!newUser.name || !newUser.email) {
+      toast.error("Name and Email are required!");
+      return;
+    }
+
+    const password = Math.random().toString(36).slice(-8);
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...newUser, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Failed to create user");
+        return;
+      }
+
+      setUsers((prev) => [...prev, { ...newUser, id: data.user._id }]);
+      setShowCreateUser(false);
+      setNewUser({ name: "", email: "", role: "Customer", status: "Active" });
+      toast.success(`User created successfully! Password: ${password}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong");
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="flex flex-col gap-4">
         <h2 className="text-3xl font-bold">Users</h2>
 
-        {/* Filters */}
+        {/* Filters & Create Button */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           <input
             type="text"
@@ -88,15 +152,19 @@ export default function AdminUsersPage() {
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
           </select>
+
+          <button
+            onClick={() => setShowCreateUser(true)}
+            className="px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600"
+          >
+            Create User
+          </button>
         </div>
 
         {/* Users Table */}
         <div className="overflow-x-auto rounded-2xl border border-white/10 mt-4">
           <table className="w-full text-sm">
-            <thead
-              className="bg-[#0B0B0B]
- text-gray-400"
-            >
+            <thead className="bg-[#0B0B0B] text-gray-400">
               <tr>
                 <th className="px-5 py-3 text-left">Name</th>
                 <th className="px-5 py-3 text-left">Email</th>
@@ -166,6 +234,93 @@ export default function AdminUsersPage() {
           </table>
         </div>
       </div>
+
+      {/* ---------------- CREATE USER MODAL ---------------- */}
+      {showCreateUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="w-full max-w-md rounded-2xl bg-[#0f0f0f] border border-white/10 p-6"
+          >
+            {/* HEADER */}
+            <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+              <h3 className="text-lg font-semibold">Create New User</h3>
+              <button
+                onClick={() => setShowCreateUser(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* FORM */}
+            <div className="flex flex-col gap-3">
+              <input
+                type="text"
+                placeholder="Name"
+                value={newUser.name}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, name: e.target.value })
+                }
+                className="px-4 py-2 rounded-lg bg-[#121212] border border-white/10 outline-none"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value })
+                }
+                className="px-4 py-2 rounded-lg bg-[#121212] border border-white/10 outline-none"
+              />
+              <select
+                value={newUser.role}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, role: e.target.value as UserRole })
+                }
+                className="px-4 py-2 rounded-lg bg-[#121212] border border-white/10"
+              >
+                <option value="Admin">Admin</option>
+                <option value="Staff">Staff</option>
+                <option value="Customer">Customer</option>
+              </select>
+              <select
+                value={newUser.status}
+                onChange={(e) =>
+                  setNewUser({
+                    ...newUser,
+                    status: e.target.value as UserStatus,
+                  })
+                }
+                className="px-4 py-2 rounded-lg bg-[#121212] border border-white/10"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            {/* ACTIONS */}
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setShowCreateUser(false)}
+                className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateUser}
+                className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white"
+              >
+                Create
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </AdminLayout>
   );
 }

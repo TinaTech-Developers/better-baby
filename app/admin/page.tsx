@@ -2,23 +2,54 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now just console log (frontend only)
-    console.log("Logging in with:", { email, password });
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Login failed", { autoClose: 3000 });
+        return;
+      }
+
+      if (data.firstLogin) {
+        toast.info("First login detected! Please reset your password.", {
+          autoClose: 4000,
+        });
+        router.push(`/admin/users/${data.userId}/edit`);
+        return;
+      }
+
+      toast.success("Logged in successfully!", { autoClose: 2000 });
+      router.push("/admin/home");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong", { autoClose: 3000 });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-[#0B0B0B]
- px-4"
-    >
+    <div className="min-h-screen flex items-center justify-center bg-[#0B0B0B] px-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -82,9 +113,14 @@ export default function AdminLoginPage() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             type="submit"
-            className="w-full bg-white text-black py-3 rounded-xl font-semibold text-sm hover:bg-[#A89078] transition"
+            disabled={loading}
+            className={`w-full py-3 rounded-xl font-semibold text-sm transition ${
+              loading
+                ? "bg-gray-500 text-gray-200 cursor-not-allowed"
+                : "bg-white text-black hover:bg-[#A89078]"
+            }`}
           >
-            Login
+            {loading ? "Logging in..." : "Login"}
           </motion.button>
         </form>
 
@@ -98,8 +134,11 @@ export default function AdminLoginPage() {
 
         {/* Footer */}
         <p className="text-center text-gray-600 mt-10 text-xs">
-          © 2025 BetterBaby. All rights reserved.
+          © 2026 BetterBaby. All rights reserved.
         </p>
+
+        {/* Toast Container */}
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
       </motion.div>
     </div>
   );

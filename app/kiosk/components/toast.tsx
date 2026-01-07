@@ -16,7 +16,7 @@ export default function Toast({ toast }: ToastProps) {
           transition={{ type: "spring", stiffness: 500, damping: 30 }}
           className="
             fixed bottom-6 left-1/2 -translate-x-1/2
-            bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400
+            bg-linear-to-r from-blue-400 via-purple-400 to-pink-400
             text-white
             px-6 py-3 rounded-full
             text-sm font-semibold

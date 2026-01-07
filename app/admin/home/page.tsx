@@ -2,35 +2,105 @@
 
 import { motion } from "framer-motion";
 import AdminLayout from "../_components/layout";
+import { useEffect, useState } from "react";
+import toast from "../../kiosk/components/toast"; // your existing toast
+
+interface Stat {
+  title: string;
+  value: number;
+}
+
+interface Activity {
+  id: string;
+  action: string;
+  item: string;
+  time: string;
+}
 
 export default function AdminDashboard() {
-  const stats = [
-    { title: "Total Clients", value: 42 },
-    { title: "Products in Shop", value: 128 },
-    { title: "Low Stock Items", value: 6 },
-    { title: "Categories", value: 9 },
-  ];
+  const [stats, setStats] = useState<Stat[]>([
+    { title: "Total Clients", value: 0 },
+    { title: "Products in Shop", value: 0 },
+    { title: "Low Stock Items", value: 0 },
+    { title: "Categories", value: 0 },
+  ]);
 
-  const recentActivity = [
-    {
-      id: "1",
-      action: "Added new product",
-      item: "Running Sneakers",
-      time: "10 mins ago",
-    },
-    {
-      id: "2",
-      action: "Updated price",
-      item: "Leather Handbag",
-      time: "1 hour ago",
-    },
-    {
-      id: "3",
-      action: "Viewed by client",
-      item: "Smart Watch",
-      time: "Yesterday",
-    },
-  ];
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch users/clients
+        const usersRes = await fetch("/api/admin/users");
+        if (!usersRes.ok) {
+          const text = await usersRes.text();
+          console.error("Users fetch error:", text);
+          throw new Error("Failed to fetch users");
+        }
+        const usersData = await usersRes.json();
+
+        // Fetch products
+        const productsRes = await fetch("/api/products");
+        if (!productsRes.ok) {
+          const text = await productsRes.text();
+          console.error("Products fetch error:", text);
+          throw new Error("Failed to fetch products");
+        }
+        const productsData = await productsRes.json();
+
+        // Fetch categories (handle 404 gracefully)
+        let categoriesCount = 0;
+        try {
+          const categoriesRes = await fetch("/api/categories");
+          if (categoriesRes.ok) {
+            const categoriesData = await categoriesRes.json();
+            categoriesCount = categoriesData.categories?.length || 0;
+          } else {
+            console.warn("/api/categories not found, setting count to 0");
+          }
+        } catch (e) {
+          console.warn("Failed to fetch categories:", e);
+        }
+
+        // Compute low stock items
+        const lowStockCount = productsData.products.filter(
+          (p: any) => p.stock <= 5
+        ).length;
+
+        // Update stats
+        setStats([
+          { title: "Total Clients", value: usersData.users.length },
+          { title: "Products in Shop", value: productsData.products.length },
+          { title: "Low Stock Items", value: lowStockCount },
+          { title: "Categories", value: categoriesCount },
+        ]);
+
+        // Generate recent activity (latest 5 product changes)
+        const activity = productsData.products
+          .sort(
+            (a: any, b: any) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          )
+          .slice(0, 5)
+          .map((p: any) => ({
+            id: p._id,
+            action:
+              p.updatedAt === p.createdAt
+                ? "Added new product"
+                : "Updated product",
+            item: p.name,
+            time: new Date(p.updatedAt).toLocaleString(),
+          }));
+
+        setRecentActivity(activity);
+      } catch (err: any) {
+        console.error(err);
+        toast(err.message || "Failed to load dashboard");
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   return (
     <AdminLayout>
@@ -67,18 +137,22 @@ export default function AdminDashboard() {
             <h3 className="text-xl font-semibold mb-4">Recent Activity</h3>
 
             <div className="space-y-4">
-              {recentActivity.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex justify-between border-b border-white/10 pb-3 last:border-none"
-                >
-                  <div>
-                    <p className="font-medium">{item.action}</p>
-                    <p className="text-sm text-gray-400">{item.item}</p>
+              {recentActivity.length > 0 ? (
+                recentActivity.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex justify-between border-b border-white/10 pb-3 last:border-none"
+                  >
+                    <div>
+                      <p className="font-medium">{item.action}</p>
+                      <p className="text-sm text-gray-400">{item.item}</p>
+                    </div>
+                    <span className="text-xs text-gray-500">{item.time}</span>
                   </div>
-                  <span className="text-xs text-gray-500">{item.time}</span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-gray-400 text-sm">No recent activity</p>
+              )}
             </div>
           </div>
 
