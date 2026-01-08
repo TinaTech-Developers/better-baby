@@ -53,18 +53,12 @@ export default function AdminDashboard() {
         const productsData = await productsRes.json();
 
         // Fetch categories (handle 404 gracefully)
-        let categoriesCount = 0;
-        try {
-          const categoriesRes = await fetch("/api/categories");
-          if (categoriesRes.ok) {
-            const categoriesData = await categoriesRes.json();
-            categoriesCount = categoriesData.categories?.length || 0;
-          } else {
-            console.warn("/api/categories not found, setting count to 0");
-          }
-        } catch (e) {
-          console.warn("Failed to fetch categories:", e);
-        }
+        // let categoriesCount = 0;
+        const uniqueCategories = new Set(
+          productsData.products.map((p: any) => p.category).filter(Boolean)
+        );
+
+        const categoriesCount = uniqueCategories.size;
 
         // Compute low stock items
         const lowStockCount = productsData.products.filter(

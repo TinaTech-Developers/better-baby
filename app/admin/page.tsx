@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast, ToastContainer } from "react-toastify";
@@ -12,6 +12,13 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (document.cookie.includes("token=")) {
+      window.location.href = "/admin/home";
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -46,7 +53,11 @@ export default function AdminLoginPage() {
 
       // Successful login
       toast.success("Logged in successfully!", { autoClose: 2000 });
-      router.push("/admin/home");
+      setLoading(true);
+
+      setTimeout(() => {
+        window.location.href = "/admin/home";
+      }, 500);
     } catch (err) {
       console.error(err);
       toast.error("Something went wrong. Please try again.", {
