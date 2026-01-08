@@ -22,8 +22,8 @@ export default function TopNavigation({
   onCartClick,
 }: Props) {
   return (
-    <header className="sticky top-0 z-30 bg-[#000000]/90 backdrop-blur border-b border-white/10">
-      <div className="flex items-center gap-8 px-6 py-4 max-w-7xl mx-auto">
+    <header className="sticky top-0 z-30 bg-white shadow-2xl backdrop-blur border-b border-white/10">
+      <div className="flex items-center gap-8 px-6 py-2 max-w-7xl mx-auto">
         {/* LOGO */}
         <Link
           href="/kiosk"
@@ -31,11 +31,11 @@ export default function TopNavigation({
           className="text-xl font-bold tracking-wide"
         >
           <Image
-            src="/BetterBaby_Logo.png"
+            src="/BetterBaby_Logo-removebg-preview.png"
             alt="BetterBaby Logo"
-            width={80}
+            width={100}
             height={40}
-            className="object-contain border border-[#a59186] rounded-md"
+            className="object-contain "
           />
         </Link>
 
@@ -72,7 +72,7 @@ export default function TopNavigation({
               setView("store");
             }}
             placeholder="Search for products..."
-            className="w-full rounded-full bg-[#a59186] px-5 py-2 text-sm outline-none focus:ring-2 focus:ring-white/20"
+            className="w-full rounded-full border-2 text-[#a59186] border-[#a59186] px-5 py-2 text-sm outline-none focus:ring-2 focus:ring-white/20"
           />
         </div>
 

@@ -185,7 +185,7 @@ export default function ProductPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-white text-black">
       {/* --- TOP NAVIGATION --- */}
       <TopNavigation
         searchTerm=""
@@ -209,7 +209,7 @@ export default function ProductPage() {
           {/* IMAGE GALLERY */}
           <div>
             <div
-              className="relative aspect-square rounded-3xl bg-[#0B0B0B]
+              className="relative aspect-square rounded-3xl bg-white
 "
             >
               <Image
@@ -245,13 +245,13 @@ export default function ProductPage() {
 
           {/* DETAILS */}
           <div className="flex flex-col justify-center">
-            <h1 className="text-4xl font-semibold tracking-tight text-[#a59186]">
+            <h1 className="text-4xl font-semibold tracking-tight text-[#1d0b02]">
               {product.name}
             </h1>
-            <p className="mt-3 text-xl text-gray-300">
+            <p className="mt-3 text-xl text-gray-900">
               ${product.price}.00 {product.currency}
             </p>
-            <p className="mt-6 max-w-xl text-gray-400 leading-relaxed">
+            <p className="mt-6 max-w-xl text-gray-700 leading-relaxed">
               {product.description}
             </p>
 
@@ -265,9 +265,9 @@ export default function ProductPage() {
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`rounded-full border px-4 py-2 text-sm hover:border-white transition ${
+                      className={`rounded-full border border-black px-4 py-2 text-sm hover:border-black transition ${
                         selectedSize === size
-                          ? "border-white"
+                          ? "border-black"
                           : "border-white/20"
                       }`}
                     >
@@ -304,8 +304,7 @@ export default function ProductPage() {
                   min={1}
                   value={quantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
-                  className="w-20 rounded-md bg-[#0B0B0B]
- border border-white/20 px-3 py-2 text-sm"
+                  className="w-20 rounded-md bg-white/10 border border-white/20 px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -319,7 +318,7 @@ export default function ProductPage() {
             </button>
 
             {/* INFO */}
-            <div className="mt-8 text-sm text-gray-500 space-y-2">
+            <div className="mt-8 text-sm text-gray-800 space-y-2">
               <p>• Free shipping worldwide</p>
               <p>• 30-day return policy</p>
               <p>• Secure checkout</p>

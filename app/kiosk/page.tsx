@@ -15,6 +15,7 @@ interface Product {
   category: string;
   price: number;
   currency: string;
+  isNew?: boolean;
   images?: Record<string, string[]>;
 }
 
@@ -192,18 +193,15 @@ export default function KioskPage() {
         onCartClick={() => setCartOpen(true)}
       />
 
-      <div
-        className="min-h-screen bg-[#0B0B0B]
- text-white"
-      >
+      <div className="bg-[#e8ebea] min-h-screen text-[#333]">
         {view === "home" && <HeroSection setView={setView} />}
-        {view === "store" && <div>Store Page Content</div>}
+        {view === "store" && <div></div>}
         {/* ---------------- STORE ---------------- */}
         {view === "store" && (
           <div className="flex">
             {/* SIDEBAR */}
-            <aside className="hidden md:block w-64 border-r border-white/10 px-6 py-6">
-              <h2 className="mb-4 text-sm font-semibold uppercase text-gray-400">
+            <aside className="hidden md:block w-64 border-r border-white/10 px-6 py-6 bg-white mt-1">
+              <h2 className="mb-4 text-sm font-bold uppercase text-gray-900">
                 Collections
               </h2>
               <ul className="space-y-2">
@@ -214,7 +212,7 @@ export default function KioskPage() {
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
                         activeCategory === cat
                           ? "bg-[#a59186] text-black"
-                          : "text-gray-300 hover:bg-white/10"
+                          : "text-gray-800 hover:bg-white/10"
                       }`}
                     >
                       {cat}
@@ -229,70 +227,77 @@ export default function KioskPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-10">
                 {filteredProducts.map((p, index) => {
                   const image = p.images && Object.values(p.images).flat()[0];
-                  const isWishlisted = wishlist[p._id];
 
+                  const wishlisted = wishlist[p._id];
                   return (
                     <motion.div
                       key={p._id}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
+                      whileHover={{ y: -4 }}
+                      className="group bg-white rounded-3xl border border-[#eee] overflow-hidden transition-shadow hover:shadow-2xl"
                     >
-                      <div className="block bg-[#141414] border border-white/5 hover:border-white/15 transition">
-                        <div className="relative aspect-square bg-[#0f0f0f]">
-                          <Image
-                            src={image || "/placeholder.png"}
-                            alt={p.name}
-                            fill
-                            className="object-cover"
-                          />
+                      {/* Image */}
+                      <div className="relative aspect-square bg-[#F7F7F7]">
+                        <Image
+                          src={image || "/placeholder.png"}
+                          alt={p.name}
+                          fill
+                          className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
+                        />
+
+                        {/* Wishlist */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setWishlist((w) => ({ ...w, [p._id]: !w[p._id] }));
+                          }}
+                          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white shadow flex items-center justify-center text-lg text-[#FF6F91]"
+                        >
+                          {wishlisted ? "♥" : "♡"}
+                        </button>
+
+                        {/* Badge */}
+                        {p.isNew && (
+                          <span className="absolute top-4 left-4 text-xs font-semibold bg-black text-white px-3 py-1 rounded-full">
+                            New
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="p-5">
+                        <p className="text-xs text-gray-400 uppercase mb-1">
+                          {p.category}
+                        </p>
+
+                        <h3 className="text-sm font-medium text-[#1d0b02] leading-snug line-clamp-2">
+                          {p.name}
+                        </h3>
+
+                        <div className="flex items-center justify-between mt-4">
+                          <p className="text-base font-semibold text-gray-900">
+                            {p.currency} {p.price.toFixed(2)}
+                          </p>
 
                           <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setWishlist((w) => ({
-                                ...w,
-                                [p._id]: !w[p._id],
-                              }));
-                            }}
-                            className="absolute top-3 right-3 h-9 w-9 rounded-full bg-black/50 text-white"
+                            onClick={() => addToCart(p)}
+                            className="opacity-0 group-hover:opacity-100 transition text-sm font-semibold text-[#FF6F91] hover:underline border border-[#FF6F91] px-5 py-1 rounded-full"
                           >
-                            {isWishlisted ? "♥" : "♡"}
+                            Add to Cart
                           </button>
-                        </div>
-
-                        <div className="p-4 space-y-3">
-                          <p className="text-xs uppercase text-gray-500">
-                            {p.category}
-                          </p>
-                          <h3 className="text-sm font-medium">{p.name}</h3>
-
-                          <div className="flex justify-between items-center gap-2 mt-3">
-                            <span className="font-semibold">
-                              {p.currency} {p.price}
-                            </span>
-
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                addToCart(p);
-                              }}
-                              className="flex-1 rounded-lg bg-[#a59186] text-black py-2 text-sm font-medium hover:bg-white transition"
-                            >
-                              Add to Cart
-                            </button>
-
-                            <Link
-                              href={`/kiosk/${p._id}`}
-                              className="flex-1 rounded-lg border border-white/20 text-[#a59186] py-2 text-sm font-medium text-center hover:border-white/50 hover:bg-white/10 transition"
-                            >
-                              View
-                            </Link>
-                          </div>
+                          <Link
+                            href={`/kiosk/${p._id}`}
+                            className="ml-2 text-sm font-semibold text-[#1d0b02] border border-[#1d0b02] px-4 py-1 rounded-full hover:underline"
+                          >
+                            View
+                          </Link>
                         </div>
                       </div>
+
+                      {/* Clickable overlay */}
+                      {/* <Link href={`/kiosk/${p._id}`} className="absolute inset-0" /> */}
                     </motion.div>
                   );
                 })}
@@ -317,14 +322,14 @@ export default function KioskPage() {
               transition={{ type: "tween", duration: 0.3 }}
               className="
         absolute right-0 top-0 h-full w-full max-w-md
-        bg-[#0f0f0f]
+        bg-gray-800 text-white
         border-l border-white/10
         flex flex-col
       "
             >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                <h2 className="text-lg font-semibold">Your Cart</h2>
+                <h2 className="text-lg font-semibold text-white">Your Cart</h2>
                 <button
                   onClick={() => setCartOpen(false)}
                   className="text-gray-400 hover:text-white"

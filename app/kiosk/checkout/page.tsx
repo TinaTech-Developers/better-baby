@@ -112,7 +112,7 @@ export default function CheckoutPage() {
   /* ---------------- UI ---------------- */
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-[#e8ebea] text-white">
       {orderPlaced && <Confetti numberOfPieces={350} recycle={false} />}
 
       <TopNavigation
@@ -124,9 +124,9 @@ export default function CheckoutPage() {
         onCartClick={() => {}}
       />
 
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-10 ">
         {/* ---------------- CART ---------------- */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 bg-white text-black p-8 rounded-xl">
           <h1 className="text-2xl font-bold">Checkout</h1>
 
           <AnimatePresence>
@@ -173,11 +173,12 @@ export default function CheckoutPage() {
                       <FaPlus size={12} />
                     </button>
 
-                    <span className="ml-auto font-bold text-purple-400">
+                    <span className="ml-auto font-bold ">
                       {item.product.currency}{" "}
                       {item.product.price * item.quantity}
                     </span>
                   </div>
+                  <hr className="border-black mt-4" />
                 </div>
               </motion.div>
             ))}
@@ -186,7 +187,7 @@ export default function CheckoutPage() {
 
         {/* ---------------- SUMMARY ---------------- */}
         <div className="sticky top-24 space-y-6">
-          <div className="p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md space-y-6">
+          <div className=" bg-white text-black p-6 rounded-xl border border-white/10 backdrop-blur-md space-y-6">
             <h2 className="text-xl font-semibold">Customer Details</h2>
 
             <input
@@ -230,7 +231,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="flex justify-between text-xl font-bold text-purple-400">
+            <div className="flex justify-between text-xl font-bold text-black">
               <span>Total</span>
               <span>{total.toFixed(2)}</span>
             </div>
