@@ -12,7 +12,6 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -23,13 +22,20 @@ export default function AdminLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Login failed", { autoClose: 3000 });
+        // Specific backend messages
+        if (res.status === 403) {
+          toast.error(data.error, { autoClose: 4000 });
+        } else {
+          toast.error(data.error || "Login failed", { autoClose: 3000 });
+        }
         return;
       }
 
+      // First login → force password reset
       if (data.firstLogin) {
         toast.info("First login detected! Please reset your password.", {
           autoClose: 4000,
@@ -38,11 +44,14 @@ export default function AdminLoginPage() {
         return;
       }
 
+      // Successful login
       toast.success("Logged in successfully!", { autoClose: 2000 });
       router.push("/admin/home");
     } catch (err) {
       console.error(err);
-      toast.error("Something went wrong", { autoClose: 3000 });
+      toast.error("Something went wrong. Please try again.", {
+        autoClose: 3000,
+      });
     } finally {
       setLoading(false);
     }

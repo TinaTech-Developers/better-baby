@@ -39,6 +39,10 @@ export default function AdminDashboard() {
         }
         const usersData = await usersRes.json();
 
+        const customerCount = usersData.users.filter(
+          (u: any) => u.role === "Customer"
+        ).length;
+
         // Fetch products
         const productsRes = await fetch("/api/products");
         if (!productsRes.ok) {
@@ -69,7 +73,7 @@ export default function AdminDashboard() {
 
         // Update stats
         setStats([
-          { title: "Total Clients", value: usersData.users.length },
+          { title: "Total Clients", value: customerCount },
           { title: "Products in Shop", value: productsData.products.length },
           { title: "Low Stock Items", value: lowStockCount },
           { title: "Categories", value: categoriesCount },
