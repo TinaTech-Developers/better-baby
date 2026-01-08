@@ -9,78 +9,61 @@ export async function POST(req: Request) {
     await connectDB();
     const { email, password } = await req.json();
 
-    if (!email || !password) {
+    if (!email || !password)
       return NextResponse.json(
         { error: "Email and password required" },
         { status: 400 }
       );
-    }
 
     const user = await User.findOne({ email });
-
-    if (!user) {
+    if (!user)
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
       );
-    }
-
-    // CHECK STATUS
-    if (user.status !== "Active") {
-      return NextResponse.json(
-        { error: "Your account is inactive. Contact an administrator." },
-        { status: 403 }
-      );
-    }
-
-    // CHECK ROLE
-    if (!["Admin", "Staff"].includes(user.role)) {
-      return NextResponse.json(
-        { error: "You are not authorized to access the admin panel." },
-        { status: 403 }
-      );
-    }
+    if (user.status !== "Active")
+      return NextResponse.json({ error: "Account inactive", status: 403 });
+    if (!["Admin", "Staff"].includes(user.role))
+      return NextResponse.json({ error: "Not authorized", status: 403 });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) {
+    if (!match)
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
       );
-    }
 
-    // FIRST LOGIN → FORCE PASSWORD RESET
     if (user.isFirstLogin) {
-      return NextResponse.json({
-        firstLogin: true,
-        userId: user._id,
-      });
+      return NextResponse.json({ firstLogin: true, userId: user._id });
     }
 
-    // JWT SECRET SAFETY CHECK
-    if (!process.env.JWT_SECRET) {
-      console.error("JWT_SECRET is missing");
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      );
-    }
+    if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET missing");
 
     const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
+      { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1d" }
+      {
+        expiresIn: "1d",
+      }
     );
 
-    return NextResponse.json({
-      token,
+    // Set JWT as HttpOnly cookie
+    const response = NextResponse.json({
+      success: true,
       userId: user._id,
       role: user.role,
     });
+    response.cookies.set({
+      name: "token",
+      value: token,
+      httpOnly: true,
+      path: "/",
+      maxAge: 24 * 60 * 60, // 1 day
+      secure: process.env.NODE_ENV === "production", // only secure on prod
+      sameSite: "lax",
+    });
+
+    return response;
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Login failed" }, { status: 500 });
