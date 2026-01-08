@@ -196,40 +196,6 @@ export default function KioskPage() {
         className="min-h-screen bg-[#0B0B0B]
  text-white"
       >
-        {/* ---------------- HOME ---------------- */}
-        {/* {view === "home" && (
-          <section className="relative h-[70vh] flex items-center justify-center">
-            <Image
-              src="https://images.unsplash.com/photo-1600180758890-6b94519a8ba6"
-              alt="Hero"
-              fill
-              className="object-cover opacity-40"
-            />
-            <div className="relative z-10 max-w-2xl text-center px-6">
-              <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-5xl md:text-6xl font-bold text-[#a59186]"
-              >
-                Discover Products <br /> Made for You
-              </motion.h2>
-
-              <p className="mt-6 text-lg text-gray-300">
-                Browse premium items curated for quality and comfort.
-              </p>
-
-              <div className="mt-10">
-                <button
-                  onClick={() => setView("store")}
-                  className="rounded-full bg-[#a59186] text-white px-8 py-4 hover:bg-white hover:text-black font-semibold hover:scale-105 transition"
-                >
-                  Browse All Products
-                </button>
-              </div>
-            </div>
-          </section>
-        )} */}
-
         {view === "home" && <HeroSection setView={setView} />}
         {view === "store" && <div>Store Page Content</div>}
         {/* ---------------- STORE ---------------- */}
