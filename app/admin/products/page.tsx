@@ -21,7 +21,6 @@ interface IProduct {
   updatedAt: string;
 }
 
-
 /* ---------------- PAGE ---------------- */
 
 export default function AdminProductsPage() {
@@ -35,7 +34,7 @@ export default function AdminProductsPage() {
       try {
         const response = await fetch("/api/products");
         const data = await response.json();
-        setProductsList(data.products); 
+        setProductsList(data.products);
       } catch (error) {
         console.error("Error fetching products:", error);
       }
@@ -43,6 +42,24 @@ export default function AdminProductsPage() {
 
     fetchProducts();
   }, []);
+
+  // ---------DELETE PRODUCT FUNCTION (TO BE IMPLEMENTED) ---------
+  const deleteProduct = async (productId: string) => {
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setProductsList((prevProducts) =>
+          prevProducts.filter((product) => product._id !== productId)
+        );
+      } else {
+        console.error("Failed to delete product");
+      }
+    } catch (error) {
+      console.error("Error deleting product:", error);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -146,7 +163,7 @@ export default function AdminProductsPage() {
             </button>
             <button
               onClick={() => {
-                console.log("Delete product:", deleteId);
+                deleteProduct(deleteId);
                 setDeleteId(null);
               }}
               className="flex-1 rounded-lg bg-red-600 py-2"
