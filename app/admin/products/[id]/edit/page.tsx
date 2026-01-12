@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import AdminLayout from "@/app/admin/_components/layout";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ImageUploadButton } from "../../new/components/ImageUploadButton";
 
 /* ---------------- TYPES ---------------- */
 type ProductColor =
@@ -30,8 +31,6 @@ interface Product {
   sizes: string[];
   colors: ProductColor[];
   images: Record<ProductColor, string[]>;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 const ALL_COLORS: ProductColor[] = [
@@ -48,54 +47,38 @@ const ALL_COLORS: ProductColor[] = [
 
 /* ---------------- PAGE ---------------- */
 export default function EditProductPage() {
-  const params = useParams();
-  const id = params?.id as string;
+  const { id } = useParams() as { id: string };
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   /* ---------------- FETCH PRODUCT ---------------- */
   useEffect(() => {
-    if (!id) return;
-
-    const fetchProduct = async () => {
-      try {
-        const res = await fetch(`/api/products/${id}`);
-        if (!res.ok) throw new Error("Failed to fetch product");
-        const data = await res.json();
-        setProduct(data);
-      } catch (err: any) {
-        setError(err.message || "Unknown error");
-        toast.error(`Error fetching product: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProduct();
+    fetch(`/api/products/${id}`)
+      .then((res) => res.json())
+      .then(setProduct)
+      .catch(() => toast.error("Failed to load product"))
+      .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <AdminLayout>Loading...</AdminLayout>;
-  if (error || !product)
-    return <AdminLayout>Error loading product: {error}</AdminLayout>;
+  if (!product) return <AdminLayout>Product not found</AdminLayout>;
 
   /* ---------------- HELPERS ---------------- */
   const toggleColor = (color: ProductColor) => {
-    setProduct((prev) =>
-      prev
-        ? {
-            ...prev,
-            colors: prev.colors.includes(color)
-              ? prev.colors.filter((c) => c !== color)
-              : [...prev.colors, color],
+    setProduct((p) =>
+      !p
+        ? p
+        : {
+            ...p,
+            colors: p.colors.includes(color)
+              ? p.colors.filter((c) => c !== color)
+              : [...p.colors, color],
           }
-        : prev
     );
   };
 
   const updateSizes = (value: string) => {
-    if (!product) return;
     setProduct({
       ...product,
       sizes: value
@@ -106,7 +89,6 @@ export default function EditProductPage() {
   };
 
   const addImage = (color: ProductColor, url: string) => {
-    if (!product || !url) return;
     setProduct({
       ...product,
       images: {
@@ -114,12 +96,51 @@ export default function EditProductPage() {
         [color]: [...product.images[color], url],
       },
     });
-    toast.success(`Image added to ${color}`);
+  };
+
+  const removeImage = async (color: ProductColor, url: string) => {
+    if (!product) return;
+
+    // Update UI immediately
+    setProduct({
+      ...product,
+      images: {
+        ...product.images,
+        [color]: product.images[color].filter((img) => img !== url),
+      },
+    });
+
+    // Persist to DB
+    await fetch(`/api/products/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...product,
+        images: {
+          ...product.images,
+          [color]: product.images[color].filter((img) => img !== url),
+        },
+      }),
+    });
+  };
+
+  const replaceImage = (
+    color: ProductColor,
+    oldUrl: string,
+    newUrl: string
+  ) => {
+    setProduct({
+      ...product,
+      images: {
+        ...product.images,
+        [color]: product.images[color].map((img) =>
+          img === oldUrl ? newUrl : img
+        ),
+      },
+    });
   };
 
   const handleSave = async () => {
-    if (!product) return;
-
     try {
       const res = await fetch(`/api/products/${id}`, {
         method: "PUT",
@@ -127,193 +148,217 @@ export default function EditProductPage() {
         body: JSON.stringify(product),
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to update product");
-      }
-
-      const updatedProduct = await res.json();
-      setProduct(updatedProduct);
-      toast.success("Product updated successfully!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update product");
+      if (!res.ok) throw new Error("Update failed");
+      toast.success("Product updated");
+    } catch {
+      toast.error("Failed to save product");
     }
   };
 
   /* ---------------- UI ---------------- */
   return (
     <AdminLayout>
-      <ToastContainer position="top-right" autoClose={3000} />
-      <div className="max-w-4xl">
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold">
-            Edit Product <span className="text-gray-400">#{id}</span>
-          </h2>
-          <Link
-            href="/admin/products"
-            className="text-gray-400 hover:text-white"
-          >
-            ← Back
-          </Link>
+      <ToastContainer />
+      <div className="max-w-4xl space-y-10">
+        <div className="flex justify-between">
+          <h2 className="text-3xl font-bold">Edit Product</h2>
+          <Link href="/admin/products">← Back</Link>
         </div>
 
-        <div className="space-y-10">
-          {/* BASIC INFO */}
-          <section className="space-y-4">
+        {/* BASIC INFO */}
+        <section className="space-y-6 ">
+          <h3 className="text-lg font-semibold">Basic Information</h3>
+
+          {/* Product Name */}
+          <div className="space-y-1">
+            <label className="text-sm text-gray-400">Product Name</label>
             <input
               value={product.name}
               onChange={(e) => setProduct({ ...product, name: e.target.value })}
-              className="w-full rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
-              placeholder="Product name"
+              className="w-full rounded-xl bg-[#0B0B0B] border border-white/20 px-4 py-3 focus:border-white outline-none"
+              placeholder="Enter product name"
             />
+          </div>
 
+          {/* Category */}
+          <div className="space-y-1">
+            <label className="text-sm text-gray-400">Category</label>
             <input
               value={product.category}
               onChange={(e) =>
                 setProduct({ ...product, category: e.target.value })
               }
-              className="w-full rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
-              placeholder="Category"
+              className="w-full rounded-xl bg-[#0B0B0B] border border-white/20 px-4 py-3 focus:border-white outline-none"
+              placeholder="e.g. Shoes, Watches, Clothing"
             />
+          </div>
 
+          {/* Description */}
+          <div className="space-y-1">
+            <label className="text-sm text-gray-400">Description</label>
             <textarea
               value={product.description}
               onChange={(e) =>
                 setProduct({ ...product, description: e.target.value })
               }
-              rows={4}
-              className="w-full rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
-              placeholder="Description"
+              rows={5}
+              className="w-full rounded-xl bg-[#0B0B0B] border border-white/20 px-4 py-3 focus:border-white outline-none resize-none"
+              placeholder="Describe the product in detail"
             />
+          </div>
 
-            <div className="flex gap-4">
+          {/* Price & Currency */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-1">
+              <label className="text-sm text-gray-400">Price</label>
               <input
                 type="number"
                 value={product.price}
                 onChange={(e) =>
                   setProduct({ ...product, price: Number(e.target.value) })
                 }
-                className="flex-1 rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
-                placeholder="Price"
+                className="w-full rounded-xl bg-[#0B0B0B] border border-white/20 px-4 py-3 focus:border-white outline-none"
+                placeholder="0.00"
               />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm text-gray-400">Currency</label>
               <input
                 value={product.currency}
                 onChange={(e) =>
                   setProduct({ ...product, currency: e.target.value })
                 }
-                className="w-32 rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
-                placeholder="Currency"
+                className="w-full rounded-xl bg-[#0B0B0B] border border-white/20 px-4 py-3 focus:border-white outline-none"
+                placeholder="USD"
               />
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* SIZES */}
-          <section>
-            <h3 className="font-semibold mb-3">Sizes</h3>
-            <input
-              defaultValue={product.sizes.join(", ")}
-              onChange={(e) => updateSizes(e.target.value)}
-              className="w-full rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
-              placeholder="Comma separated (e.g. S, M, L, XL)"
-            />
-          </section>
+        {/* SIZES */}
+        <section>
+          <h3>Sizes</h3>
+          <input
+            defaultValue={product.sizes.join(", ")}
+            onChange={(e) => updateSizes(e.target.value)}
+            className="w-full rounded-xl bg-[#0B0B0B] border border-white/20 px-4 py-3 focus:border-white outline-none input"
+          />
+        </section>
 
-          {/* COLORS */}
-          <section>
-            <h3 className="font-semibold mb-3">Colors</h3>
-            <div className="flex flex-wrap gap-3">
-              {ALL_COLORS.map((color) => (
-                <button
-                  key={color}
-                  onClick={() => toggleColor(color)}
-                  className={`rounded-full border px-4 py-2 text-sm transition ${
-                    product.colors.includes(color)
-                      ? "border-white"
-                      : "border-white/20"
-                  }`}
-                >
-                  {color}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* IMAGES */}
-          <section className="space-y-6">
-            <h3 className="font-semibold">Images per Color</h3>
-
-            {product.colors.map((color) => (
-              <div key={color} className="space-y-3">
-                <p className="text-sm text-gray-400">{color}</p>
-                <ImageInput
-                  onAdd={(url) => addImage(color, url)}
-                  images={product.images[color]}
-                />
-              </div>
+        {/* COLORS */}
+        <section>
+          <h3>Colors</h3>
+          <div className="flex flex-wrap gap-3">
+            {ALL_COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => toggleColor(c)}
+                className={`px-4 py-2 rounded-full border ${
+                  product.colors.includes(c)
+                    ? "border-white"
+                    : "border-white/20"
+                }`}
+              >
+                {c}
+              </button>
             ))}
-          </section>
+          </div>
+        </section>
 
-          {/* SAVE */}
-          <button
-            onClick={handleSave}
-            className="rounded-full bg-white px-8 py-4 font-semibold text-black hover:scale-[1.02] transition"
-          >
-            Save Changes
-          </button>
-        </div>
+        {/* IMAGES */}
+        <section className="space-y-6">
+          <h3>Images</h3>
+
+          {product.colors.map((color) => (
+            <EditableImageInput
+              key={color}
+              color={color}
+              images={product.images[color]}
+              addImage={addImage}
+              removeImage={removeImage}
+              replaceImage={replaceImage}
+            />
+          ))}
+        </section>
+
+        <button
+          onClick={handleSave}
+          className="bg-white text-black px-6 py-3 rounded-xl font-semibold hover:scale-[1.02] transition"
+        >
+          Save Changes
+        </button>
       </div>
     </AdminLayout>
   );
 }
 
-/* ---------------- IMAGE INPUT ---------------- */
-function ImageInput({
-  onAdd,
+/* ---------------- IMAGE EDITOR ---------------- */
+function EditableImageInput({
+  color,
   images,
-}: {
-  onAdd: (url: string) => void;
-  images: string[];
-}) {
+  addImage,
+  removeImage,
+  replaceImage,
+}: any) {
+  const [editing, setEditing] = useState<string | null>(null);
   const [url, setUrl] = useState("");
 
   return (
-    <div>
-      <div className="flex gap-3">
-        <input
-          placeholder="Image URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          className="flex-1 rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-2"
-        />
-        <button
-          onClick={() => {
-            onAdd(url);
-            setUrl("");
-          }}
-          className="rounded-xl bg-[#1a1a1a] px-4"
-        >
-          Add
-        </button>
+    <div className="space-y-3">
+      <p className="text-sm text-gray-400">{color}</p>
+
+      <ImageUploadButton
+        onClientUploadComplete={(res) =>
+          res?.forEach((f) => addImage(color, f.url))
+        }
+      />
+
+      <div className="flex gap-3 flex-wrap">
+        {images.map((img: string) => (
+          <div
+            key={img}
+            className="relative w-20 h-20 rounded overflow-hidden group"
+          >
+            <Image src={img} fill alt="" className="object-cover" />
+
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex gap-2 items-center justify-center">
+              <button
+                onClick={() => {
+                  setEditing(img);
+                  setUrl(img);
+                }}
+                className="text-xs px-2 p-1 "
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => removeImage(color, img)}
+                className="text-xs px-2 p-1  bg-red-500 rounded-full"
+              >
+                Del
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {images.length > 0 && (
-        <div className="mt-3 flex gap-3">
-          {images.map((img) => (
-            <div
-              key={img}
-              className="relative h-16 w-16 rounded-lg overflow-hidden"
-            >
-              <Image src={img} alt="" fill className="object-cover" />
-            </div>
-          ))}
+      {editing && (
+        <div className="flex gap-2">
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            className="input flex-1"
+          />
+          <button
+            onClick={() => {
+              replaceImage(color, editing, url);
+              setEditing(null);
+            }}
+            className="bg-white text-black px-4 py-2 rounded-xl font-semibold hover:scale-[1.02] transition"
+          >
+            Save
+          </button>
         </div>
       )}
     </div>

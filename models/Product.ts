@@ -11,7 +11,21 @@ export type ProductColor =
   | "Beige"
   | "Silver"
   | "Rose Gold"
-  | "Dark Blue";
+  | "Dark Blue"
+  | "Green"
+  | "Pink"
+  | "Khaki"
+  | "Grey"
+  | "Purple"
+  | "Orange"
+  | "Yellow"
+  | "Lime"
+  | "Teal"
+  | "Navy"
+  | "Maroon"
+  | "Olive"
+  | "Cyan"
+  | "Magenta";
 
 export interface IProduct extends Document {
   name: string;
@@ -38,6 +52,20 @@ export const ALL_COLORS: ProductColor[] = [
   "Silver",
   "Rose Gold",
   "Dark Blue",
+  "Green",
+  "Pink",
+  "Khaki",
+  "Grey",
+  "Purple",
+  "Orange",
+  "Yellow",
+  "Lime",
+  "Teal",
+  "Navy",
+  "Maroon",
+  "Olive",
+  "Cyan",
+  "Magenta",
 ];
 
 /* ---------------- SCHEMA ---------------- */

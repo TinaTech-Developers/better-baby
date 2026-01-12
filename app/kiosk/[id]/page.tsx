@@ -286,10 +286,10 @@ export default function ProductPage() {
                       key={color}
                       title={color}
                       onClick={() => handleColorClick(color)}
-                      className={`h-6 w-6 rounded-full border transition ${
+                      className={`h-6 w-6 rounded-full border transition border-black ${
                         selectedColor === color
-                          ? "ring-2 ring-white"
-                          : "border-white/30"
+                          ? "ring-2 ring-red-500"
+                          : "border-black"
                       } ${colorToBg(color)}`}
                     />
                   ))}
@@ -319,9 +319,9 @@ export default function ProductPage() {
 
             {/* INFO */}
             <div className="mt-8 text-sm text-gray-800 space-y-2">
-              <p>• Free shipping worldwide</p>
-              <p>• 30-day return policy</p>
-              <p>• Secure checkout</p>
+              <p>• Nationwide delivery services across Zimbabwe</p>
+              <p>• One-week hassle-free return policy</p>
+              <p>• Visit our physical retail stores for in-person shopping</p>
             </div>
           </div>
         </div>

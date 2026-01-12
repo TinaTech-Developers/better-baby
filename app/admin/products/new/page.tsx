@@ -1,16 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import AdminLayout from "../../_components/layout";
 import { ImageUploadButton } from "./components/ImageUploadButton";
-import { ClientUploadedFileData } from "uploadthing/types";
-import { UploadButton } from "@uploadthing/react";
-import { OurFileRouter } from "@/app/api/uploadthing/core";
 
 /* ---------------- TYPES ---------------- */
-type ProductColor =
+export type ProductColor =
   | "Red"
   | "Blue"
   | "Black"
@@ -19,8 +15,23 @@ type ProductColor =
   | "Beige"
   | "Silver"
   | "Rose Gold"
-  | "Dark Blue";
+  | "Dark Blue"
+  | "Green"
+  | "Pink"
+  | "Khaki"
+  | "Grey"
+  | "Purple"
+  | "Orange"
+  | "Yellow"
+  | "Lime"
+  | "Teal"
+  | "Navy"
+  | "Maroon"
+  | "Olive"
+  | "Cyan"
+  | "Magenta";
 
+/* ---------------- COLORS ---------------- */
 const ALL_COLORS: ProductColor[] = [
   "Red",
   "Blue",
@@ -31,10 +42,32 @@ const ALL_COLORS: ProductColor[] = [
   "Silver",
   "Rose Gold",
   "Dark Blue",
+  "Green",
+  "Pink",
+  "Khaki",
+  "Grey",
+  "Purple",
+  "Orange",
+  "Yellow",
+  "Lime",
+  "Teal",
+  "Navy",
+  "Maroon",
+  "Olive",
+  "Cyan",
+  "Magenta",
 ];
 
-/* ---------------- PAGE ---------------- */
+/* ---------------- SAFE INITIAL IMAGES ---------------- */
+const initialImages: Record<ProductColor, string[]> = ALL_COLORS.reduce(
+  (acc, color) => {
+    acc[color] = [];
+    return acc;
+  },
+  {} as Record<ProductColor, string[]>
+);
 
+/* ---------------- PAGE ---------------- */
 export default function NewProductPage() {
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -43,18 +76,18 @@ export default function NewProductPage() {
   const [description, setDescription] = useState("");
   const [sizes, setSizes] = useState<string[]>([]);
   const [colors, setColors] = useState<ProductColor[]>([]);
-  const [images, setImages] = useState<Record<ProductColor, string[]>>({
-    Red: [],
-    Blue: [],
-    Black: [],
-    White: [],
-    Brown: [],
-    Beige: [],
-    Silver: [],
-    "Rose Gold": [],
-    "Dark Blue": [],
-  });
+  const [colorSearch, setColorSearch] = useState("");
+  const [images, setImages] =
+    useState<Record<ProductColor, string[]>>(initialImages);
 
+  /* ---------------- COLOR SEARCH ---------------- */
+  const filteredColors = useMemo(() => {
+    return ALL_COLORS.filter((c) =>
+      c.toLowerCase().includes(colorSearch.toLowerCase())
+    );
+  }, [colorSearch]);
+
+  /* ---------------- HELPERS ---------------- */
   const toggleColor = (color: ProductColor) => {
     setColors((prev) =>
       prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
@@ -69,59 +102,44 @@ export default function NewProductPage() {
     }));
   };
 
+  /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async () => {
-    try {
-      const product = {
-        name,
-        category: category || "Uncategorized",
-        price,
-        currency,
-        description,
-        sizes,
-        colors,
-        images,
-      };
+    const product = {
+      name,
+      category: category || "Uncategorized",
+      price,
+      currency,
+      description,
+      sizes,
+      colors,
+      images,
+    };
 
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(product),
-      });
+    const res = await fetch("/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(product),
+    });
 
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error?.error || "Failed to create product");
-      }
-
-      const data = await res.json();
-      alert(`Product created successfully: ${data.name}`);
-      console.log("Created Product:", data);
-
-      // Reset form
-      setName("");
-      setCategory("");
-      setPrice(0);
-      setCurrency("USD");
-      setDescription("");
-      setSizes([]);
-      setColors([]);
-      setImages({
-        Red: [],
-        Blue: [],
-        Black: [],
-        White: [],
-        Brown: [],
-        Beige: [],
-        Silver: [],
-        "Rose Gold": [],
-        "Dark Blue": [],
-      });
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message);
+    if (!res.ok) {
+      alert("Failed to create product");
+      return;
     }
+
+    alert("Product created successfully!");
+
+    // reset
+    setName("");
+    setCategory("");
+    setPrice(0);
+    setCurrency("USD");
+    setDescription("");
+    setSizes([]);
+    setColors([]);
+    setImages(initialImages);
   };
 
+  /* ---------------- UI ---------------- */
   return (
     <AdminLayout>
       <div className="max-w-4xl">
@@ -143,15 +161,14 @@ export default function NewProductPage() {
               placeholder="Product name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
+              className="w-full rounded-xl bg-[#0B0B0B] border border-white/10 px-4 py-3"
             />
+
             <input
               placeholder="Category"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
+              className="w-full rounded-xl bg-[#0B0B0B] border border-white/10 px-4 py-3"
             />
 
             <textarea
@@ -159,8 +176,7 @@ export default function NewProductPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              className="w-full rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
+              className="w-full rounded-xl bg-[#0B0B0B] border border-white/10 px-4 py-3"
             />
 
             <div className="flex gap-4">
@@ -169,15 +185,13 @@ export default function NewProductPage() {
                 placeholder="Price"
                 value={price}
                 onChange={(e) => setPrice(Number(e.target.value))}
-                className="flex-1 rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
+                className="flex-1 rounded-xl bg-[#0B0B0B] border border-white/10 px-4 py-3"
               />
               <input
                 placeholder="Currency"
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-32 rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
+                className="w-32 rounded-xl bg-[#0B0B0B] border border-white/10 px-4 py-3"
               />
             </div>
           </section>
@@ -195,21 +209,30 @@ export default function NewProductPage() {
                     .filter(Boolean)
                 )
               }
-              className="w-full rounded-xl bg-[#0B0B0B]
- border border-white/10 px-4 py-3"
+              className="w-full rounded-xl bg-[#0B0B0B] border border-white/10 px-4 py-3"
             />
           </section>
 
           {/* COLORS */}
-          <section>
-            <h3 className="font-semibold mb-3">Colors</h3>
-            <div className="flex flex-wrap gap-3">
-              {ALL_COLORS.map((color) => (
+          <section className="space-y-3">
+            <h3 className="font-semibold">Colors</h3>
+
+            <input
+              placeholder="Search colors..."
+              value={colorSearch}
+              onChange={(e) => setColorSearch(e.target.value)}
+              className="w-full rounded-xl bg-[#0B0B0B] border border-white/10 px-4 py-3"
+            />
+
+            <div className="flex flex-wrap gap-3 max-h-40 overflow-y-auto">
+              {filteredColors.map((color) => (
                 <button
                   key={color}
                   onClick={() => toggleColor(color)}
                   className={`rounded-full border px-4 py-2 text-sm transition ${
-                    colors.includes(color) ? "border-white" : "border-white/20"
+                    colors.includes(color)
+                      ? "border-white bg-white text-black"
+                      : "border-white/20"
                   }`}
                 >
                   {color}
@@ -233,7 +256,6 @@ export default function NewProductPage() {
               </div>
             ))}
           </section>
-
           {/* SUBMIT */}
           <button
             onClick={handleSubmit}
@@ -247,7 +269,7 @@ export default function NewProductPage() {
   );
 }
 
-/* ---------------- UPLOADTHING INPUT ---------------- */
+/* ---------------- UPLOAD INPUT ---------------- */
 function UploadThingInput({
   color,
   addImage,
@@ -261,15 +283,13 @@ function UploadThingInput({
     <div className="space-y-3">
       <ImageUploadButton
         className="bg-[#1a1a1a] text-white px-4 py-2 rounded-xl"
-        onClientUploadComplete={(res) => {
-          if (!res) return;
-          res.forEach((file) => addImage(color, file.url));
-        }}
-        onUploadError={(err) => alert(`Upload failed: ${err.message}`)}
+        onClientUploadComplete={(res) =>
+          res?.forEach((file) => addImage(color, file.url))
+        }
       />
 
       {images.length > 0 && (
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           {images.map((img) => (
             <div
               key={img}
