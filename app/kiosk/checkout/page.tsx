@@ -1,263 +1,338 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import Confetti from "react-confetti";
-import { FaPlus, FaMinus } from "react-icons/fa";
-import { QRCodeSVG } from "qrcode.react";
-import TopNavigation from "../components/topnavigation";
-
-/* ---------------- TYPES ---------------- */
-
-interface CartItem {
-  product: {
-    _id: string;
-    name: string;
-    price: number;
-    currency: string;
-    image?: string;
-  };
-  quantity: number;
-}
-
-interface Customer {
-  fullName: string;
-  email: string;
-  phone: string;
-}
-
-/* ---------------- PAGE ---------------- */
+import { useSession } from "next-auth/react";
+import { FaWhatsapp } from "react-icons/fa";
 
 export default function CheckoutPage() {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [customer, setCustomer] = useState<Customer>({
+  const { data: session } = useSession();
+
+  const [cart, setCart] = useState<any[]>([]);
+  const [mode, setMode] = useState("delivery");
+
+  const [distanceKm, setDistanceKm] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState("");
+
+  const [customer, setCustomer] = useState({
     fullName: "",
     email: "",
     phone: "",
+    area: "",
+    addressDetails: "",
+    note: "",
+    time: "",
   });
 
-  const [showPayNow, setShowPayNow] = useState(false);
-  const [paymentLink, setPaymentLink] = useState("");
-  const [orderPlaced, setOrderPlaced] = useState(false);
-
-  /* ---------------- LOAD CART ---------------- */
+  const DELIVERY_ZONES = {
+    Belvedere: 5,
+    Avondale: 6,
+    Borrowdale: 12,
+    CBD: 4,
+    Ruwa: 15,
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem("cart");
     if (stored) setCart(JSON.parse(stored));
   }, []);
 
-  /* ---------------- HELPERS ---------------- */
+  // ✅ Auto-fill
+  useEffect(() => {
+    if (!session || !session.user) return;
 
-  const updateQuantity = (id: string, delta: number) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.product._id === id
-          ? { ...item, quantity: Math.max(1, item.quantity + delta) }
-          : item
-      )
-    );
+    setCustomer((prev) => ({
+      ...prev,
+      fullName: session.user?.name ?? "",
+      email: session.user?.email ?? "",
+    }));
+  }, [session]);
+
+  /* ---------------- DISTANCE ---------------- */
+
+  const calculateDistance = async (destination: string) => {
+    if (!destination) return;
+
+    const res = await fetch("/api/distance", {
+      method: "POST",
+      body: JSON.stringify({
+        origin: "Emerald Hill, Harare",
+        destination,
+      }),
+    });
+
+    const data = await res.json();
+    setDistanceKm(data.distanceKm || 0);
   };
+
+  /* ---------------- TOTALS ---------------- */
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
-    0
+    0,
   );
 
   const vat = subtotal * 0.15;
-  const total = subtotal + vat;
+  const deliveryFee = mode === "delivery" ? distanceKm * 0.4 : 0;
+  const total = subtotal + vat + deliveryFee;
 
-  /* ---------------- PAYNOW ---------------- */
+  /* ---------------- ORDER ---------------- */
 
-  const handlePayNow = async () => {
-    if (!customer.fullName || !customer.email || !customer.phone) {
-      alert("Please enter your details before payment.");
+  const handleOrder = async () => {
+    if (!customer.fullName || !customer.phone) {
+      alert("Fill required fields");
       return;
     }
 
-    if (cart.length === 0) return;
-
-    const res = await fetch("/api/paynow", {
+    const res = await fetch("/api/orders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         customer,
         items: cart,
         subtotal,
         vat,
-        total: total.toFixed(2),
+        delivery: deliveryFee,
+        total,
+        mode,
+        distanceKm,
+        paymentMethod,
       }),
     });
 
+    if (!res.ok) {
+      alert("Order Failed");
+      return;
+    }
     const data = await res.json();
 
-    setPaymentLink(data.paymentLink);
-    localStorage.setItem("orderId", data.orderId);
-    setShowPayNow(true);
-  };
+    if (!data.orderId) {
+      alert("Order not created");
+      return;
+    }
 
-  const handleConfirmOrder = async () => {
-    setOrderPlaced(true);
+    const itemsText = cart
+      .map(
+        (item) =>
+          `- ${item.product.name} x${item.quantity} (${item.product.currency} ${
+            item.product.price * item.quantity
+          })`,
+      )
+      .join("\n");
+
+    const message = `
+*New Order* 🛒
+*Order No*: ${data.orderId}
+
+*Type*: ${mode.toUpperCase()}
+
+*Name*: ${customer.fullName}
+*Phone*: ${customer.phone}
+*Email*: ${customer.email}
+
+${
+  mode === "delivery" ?
+    `*Area*: ${customer.area}
+*Address*: ${customer.addressDetails}
+*Distance*: ${distanceKm.toFixed(2)} km`
+  : `*Pickup*: Emerald Hill`
+}
+
+*Time*: ${customer.time}
+
+*Items*:
+${itemsText}
+*Payment*: ${paymentMethod.toUpperCase()}
+
+*Subtotal*: ${subtotal.toFixed(2)}
+*Delivery*: ${deliveryFee.toFixed(2)}
+*Total*: ${total.toFixed(2)}
+`;
+
+    window.open(
+      `https://wa.me/263712471209?text=${encodeURIComponent(message)}`,
+      "_blank",
+    );
 
     localStorage.removeItem("cart");
     setCart([]);
-
-    setTimeout(() => {
-      setOrderPlaced(false);
-      setShowPayNow(false);
-    }, 4000);
   };
 
-  /* ---------------- UI ---------------- */
-
   return (
-    <div className="min-h-screen bg-[#e8ebea] text-white">
-      {orderPlaced && <Confetti numberOfPieces={350} recycle={false} />}
+    <div className="min-h-screen bg-gray-100 pb-32">
+      <div className="max-w-2xl mx-auto p-5 space-y-6">
+        <h1 className="text-2xl font-semibold text-gray-800">Checkout</h1>
 
-      <TopNavigation
-        searchTerm=""
-        setSearchTerm={() => {}}
-        setView={() => {}}
-        setActiveCategory={() => {}}
-        cartCount={cart.reduce((s, i) => s + i.quantity, 0)}
-        onCartClick={() => {}}
-      />
+        {/* TOGGLE */}
+        <div className="flex bg-white p-1 rounded-xl shadow-sm">
+          <button
+            onClick={() => setMode("delivery")}
+            className={`flex-1 py-2 rounded-lg ${
+              mode === "delivery" ? "bg-black text-white" : "text-gray-600"
+            }`}
+          >
+            Delivery
+          </button>
 
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-3 gap-10 ">
-        {/* ---------------- CART ---------------- */}
-        <div className="lg:col-span-2 space-y-6 bg-white text-black p-8 rounded-xl">
-          <h1 className="text-2xl font-bold">Checkout</h1>
-
-          <AnimatePresence>
-            {cart.map((item) => (
-              <motion.div
-                key={item.product._id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="flex gap-4 p-5 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md"
-              >
-                <div className="relative w-24 h-24 rounded-xl overflow-hidden">
-                  {item.product.image && (
-                    <Image
-                      src={item.product.image}
-                      alt={item.product.name}
-                      fill
-                      className="object-cover"
-                    />
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <p className="font-semibold">{item.product.name}</p>
-                  <p className="text-sm text-gray-400">
-                    {item.product.currency} {item.product.price}
-                  </p>
-
-                  <div className="flex items-center gap-4 mt-3">
-                    <button
-                      onClick={() => updateQuantity(item.product._id, -1)}
-                      className="p-2 rounded-full bg-purple-500/20"
-                    >
-                      <FaMinus size={12} />
-                    </button>
-
-                    <span className="w-8 text-center">{item.quantity}</span>
-
-                    <button
-                      onClick={() => updateQuantity(item.product._id, 1)}
-                      className="p-2 rounded-full bg-purple-500/20"
-                    >
-                      <FaPlus size={12} />
-                    </button>
-
-                    <span className="ml-auto font-bold ">
-                      {item.product.currency}{" "}
-                      {item.product.price * item.quantity}
-                    </span>
-                  </div>
-                  <hr className="border-black mt-4" />
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+          <button
+            onClick={() => setMode("collection")}
+            className={`flex-1 py-2 rounded-lg ${
+              mode === "collection" ? "bg-black text-white" : "text-gray-600"
+            }`}
+          >
+            Collection
+          </button>
         </div>
 
-        {/* ---------------- SUMMARY ---------------- */}
-        <div className="sticky top-24 space-y-6">
-          <div className=" bg-white text-black p-6 rounded-xl border border-white/10 backdrop-blur-md space-y-6">
-            <h2 className="text-xl font-semibold">Customer Details</h2>
+        {/* DELIVERY */}
+        {mode === "delivery" && (
+          <div className="bg-white p-5 rounded-2xl shadow-sm space-y-3">
+            <select
+              className="input"
+              value={customer.area}
+              onChange={(e) => {
+                const area = e.target.value;
+
+                setCustomer({ ...customer, area });
+
+                setDistanceKm(
+                  DELIVERY_ZONES[area as keyof typeof DELIVERY_ZONES] || 0,
+                );
+              }}
+            >
+              <option value="">Select Area</option>
+              {Object.keys(DELIVERY_ZONES).map((zone) => (
+                <option key={zone} value={zone}>
+                  {zone}
+                </option>
+              ))}
+            </select>
 
             <input
-              placeholder="Full Name"
-              value={customer.fullName}
-              onChange={(e) =>
-                setCustomer({ ...customer, fullName: e.target.value })
-              }
-              className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3"
+              placeholder="House / Street"
+              onChange={(e) => {
+                const value = e.target.value;
+                setCustomer({
+                  ...customer,
+                  addressDetails: value,
+                });
+
+                calculateDistance(`${customer.area} ${value}`);
+              }}
+              className="input"
             />
 
-            <input
-              placeholder="Email"
-              type="email"
-              value={customer.email}
+            <select
+              className="input"
               onChange={(e) =>
-                setCustomer({ ...customer, email: e.target.value })
+                setCustomer({ ...customer, time: e.target.value })
               }
-              className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3"
-            />
+            >
+              <option value="">Select Delivery Time</option>
+              <option>10:00 - 12:00</option>
+              <option>12:00 - 14:00</option>
+              <option>14:00 - 16:00</option>
+              <option>16:00 - 17:00</option>
+            </select>
 
-            <input
-              placeholder="Phone"
-              value={customer.phone}
-              onChange={(e) =>
-                setCustomer({ ...customer, phone: e.target.value })
-              }
-              className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3"
-            />
+            <div className="bg-white p-5 rounded-2xl shadow-sm space-y-3">
+              <h2 className="text-gray-800 font-medium">Payment Method</h2>
 
-            <hr className="border-white/10" />
-
-            <div className="space-y-2 text-sm text-gray-400">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>VAT (15%)</span>
-                <span>{vat.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-between text-xl font-bold text-black">
-              <span>Total</span>
-              <span>{total.toFixed(2)}</span>
-            </div>
-
-            {!showPayNow ? (
-              <button
-                onClick={handlePayNow}
-                className="w-full py-4 rounded-full bg-linear-to-r from-green-400 to-green-600 font-semibold text-lg"
+              <select
+                className="input"
+                onChange={(e) => setPaymentMethod(e.target.value)}
               >
-                Pay with PayNow
-              </button>
-            ) : (
-              <div className="flex flex-col items-center gap-4">
-                <QRCodeSVG value={paymentLink} size={180} fgColor="#00FF88" />
+                <option value="">Select Payment Method</option>
+                <option value="ecocash">EcoCash</option>
+                <option value="swipe">Swipe</option>
+                <option value="cod">Cash on Delivery</option>
+              </select>
+            </div>
 
-                <button
-                  onClick={handleConfirmOrder}
-                  className="w-full py-4 rounded-full bg-purple-500 font-semibold text-lg"
-                >
-                  Confirm Order
-                </button>
-              </div>
+            {distanceKm > 0 && (
+              <p className="text-gray-600 text-sm">
+                Distance: {distanceKm.toFixed(2)} km
+              </p>
             )}
+          </div>
+        )}
+
+        {/* COLLECTION */}
+        {mode === "collection" && (
+          <div className="bg-white p-5 rounded-2xl shadow-sm">
+            <p className="text-gray-600">Pickup: Emerald Hill, Harare</p>
+
+            <input
+              type="time"
+              onChange={(e) =>
+                setCustomer({ ...customer, time: e.target.value })
+              }
+              className="input mt-3"
+            />
+          </div>
+        )}
+
+        {/* CONTACT */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm space-y-3">
+          <input
+            placeholder="Full Name"
+            value={customer.fullName}
+            onChange={(e) =>
+              setCustomer({ ...customer, fullName: e.target.value })
+            }
+            className="input"
+          />
+
+          <input
+            placeholder="Phone"
+            onChange={(e) =>
+              setCustomer({ ...customer, phone: e.target.value })
+            }
+            className="input"
+          />
+        </div>
+
+        {/* SUMMARY */}
+        <div className="bg-white p-5 rounded-2xl shadow-sm">
+          <div className="flex justify-between text-gray-600">
+            <span>Subtotal</span>
+            <span>{subtotal.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between text-gray-600">
+            <span>Delivery</span>
+            <span>{deliveryFee.toFixed(2)}</span>
+          </div>
+
+          <div className="flex justify-between font-bold text-gray-800 mt-2">
+            <span>Total</span>
+            <span>{total.toFixed(2)}</span>
           </div>
         </div>
       </div>
+
+      {/* BUTTON */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow">
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={handleOrder}
+            className="w-full bg-green-600 text-white py-4 rounded-xl flex justify-center gap-2"
+          >
+            Continue to WhatsApp <FaWhatsapp />
+          </button>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .input {
+          width: 100%;
+          border: 1px solid #e5e7eb;
+          padding: 12px;
+          border-radius: 10px;
+          color: #4b5563;
+        }
+      `}</style>
     </div>
   );
 }
