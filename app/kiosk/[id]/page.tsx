@@ -85,9 +85,8 @@ export default function ProductPage() {
         const data: Product = await res.json();
         setProduct(data);
 
-        const defaultColor: ProductColor = data.colors.includes("Blue")
-          ? "Blue"
-          : data.colors[0];
+        const defaultColor: ProductColor =
+          data.colors.includes("Blue") ? "Blue" : data.colors[0];
         setSelectedColor(defaultColor);
         setSelectedSize(data.sizes[0]);
         setMainImage(data.images[defaultColor][0]);
@@ -120,14 +119,14 @@ export default function ProductPage() {
         (item) =>
           item.product._id === product._id &&
           item.size === selectedSize &&
-          item.color === selectedColor
+          item.color === selectedColor,
       );
 
       if (existing) {
         return prev.map((item) =>
-          item === existing
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
+          item === existing ?
+            { ...item, quantity: item.quantity + quantity }
+          : item,
         );
       }
 
@@ -149,21 +148,21 @@ export default function ProductPage() {
   const increaseQty = (id: string) =>
     setCart((prev) =>
       prev.map((item) =>
-        item.product._id === id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      )
+        item.product._id === id ?
+          { ...item, quantity: item.quantity + 1 }
+        : item,
+      ),
     );
 
   const decreaseQty = (id: string) =>
     setCart((prev) =>
       prev
         .map((item) =>
-          item.product._id === id
-            ? { ...item, quantity: item.quantity - 1 }
-            : item
+          item.product._id === id ?
+            { ...item, quantity: item.quantity - 1 }
+          : item,
         )
-        .filter((item) => item.quantity > 0)
+        .filter((item) => item.quantity > 0),
     );
 
   const removeItem = (id: string) =>
@@ -183,7 +182,10 @@ export default function ProductPage() {
         return "bg-gray-500 border-white/30";
     }
   };
-
+  const subtotal = cart.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0,
+  );
   return (
     <div className="min-h-screen bg-white text-black">
       {/* --- TOP NAVIGATION --- */}
@@ -266,9 +268,9 @@ export default function ProductPage() {
                       key={size}
                       onClick={() => setSelectedSize(size)}
                       className={`rounded-full border border-black px-4 py-2 text-sm hover:border-black transition ${
-                        selectedSize === size
-                          ? "border-black"
-                          : "border-white/20"
+                        selectedSize === size ? "border-black" : (
+                          "border-white/20"
+                        )
                       }`}
                     >
                       {size}
@@ -287,9 +289,9 @@ export default function ProductPage() {
                       title={color}
                       onClick={() => handleColorClick(color)}
                       className={`h-6 w-6 rounded-full border transition border-black ${
-                        selectedColor === color
-                          ? "ring-2 ring-red-500"
-                          : "border-black"
+                        selectedColor === color ?
+                          "ring-2 ring-red-500"
+                        : "border-black"
                       } ${colorToBg(color)}`}
                     />
                   ))}
@@ -354,10 +356,9 @@ export default function ProductPage() {
 
             {/* Items */}
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-              {cart.length === 0 ? (
+              {cart.length === 0 ?
                 <p className="text-gray-400 text-sm">Your cart is empty.</p>
-              ) : (
-                cart.map((item) => (
+              : cart.map((item) => (
                   <div
                     key={item.product._id}
                     className="flex gap-4 border-b border-white/10 pb-4"
@@ -365,9 +366,9 @@ export default function ProductPage() {
                     <div className="relative h-16 w-16 bg-[#111] rounded-md overflow-hidden">
                       <Image
                         src={
-                          item.product.images
-                            ? Object.values(item.product.images).flat()[0]
-                            : "/placeholder.png"
+                          item.product.images ?
+                            Object.values(item.product.images).flat()[0]
+                          : "/placeholder.png"
                         }
                         alt={item.product.name}
                         fill
@@ -411,55 +412,30 @@ export default function ProductPage() {
                     </div>
                   </div>
                 ))
-              )}
+              }
             </div>
 
             {/* Totals */}
             <div className="border-t border-white/10 px-6 py-4 space-y-2 text-sm">
               <div className="flex justify-between text-gray-400">
                 <span>Subtotal</span>
-                <span>
-                  {cart
-                    .reduce(
-                      (sum, item) => sum + item.product.price * item.quantity,
-                      0
-                    )
-                    .toFixed(2)}
-                </span>
+                <span>{subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-gray-400">
-                <span>VAT (15%)</span>
-                <span>
-                  {(
-                    cart.reduce(
-                      (sum, item) => sum + item.product.price * item.quantity,
-                      0
-                    ) * 0.15
-                  ).toFixed(2)}
-                </span>
-              </div>
+
               <div className="flex justify-between text-white font-semibold pt-2">
                 <span>Total</span>
-                <span>
-                  {(
-                    cart.reduce(
-                      (sum, item) => sum + item.product.price * item.quantity,
-                      0
-                    ) * 1.15
-                  ).toFixed(2)}
-                </span>
+                <span>{subtotal.toFixed(2)}</span>
               </div>
             </div>
-
             {/* Checkout */}
             <div className="px-6 py-4">
               <Link
                 href="/kiosk/checkout"
                 onClick={() => setCartOpen(false)}
                 className={`block text-center rounded-full py-3 font-semibold transition ${
-                  cart.length === 0
-                    ? "bg-gray-600 text-gray-300 pointer-events-none"
-                    : "bg-white text-black hover:opacity-90"
+                  cart.length === 0 ?
+                    "bg-gray-600 text-gray-300 pointer-events-none"
+                  : "bg-white text-black hover:opacity-90"
                 }`}
               >
                 Proceed to Checkout

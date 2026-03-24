@@ -29,6 +29,11 @@ export default function CheckoutPage() {
     Borrowdale: 12,
     CBD: 4,
     Ruwa: 15,
+    Chisipite: 11,
+    "Mt Pleasant": 8,
+    Westgate: 12,
+    Highfields: 13,
+    "Msasa Park": 12,
   };
 
   useEffect(() => {
@@ -73,7 +78,7 @@ export default function CheckoutPage() {
 
   const vat = subtotal * 0.15;
   const deliveryFee = mode === "delivery" ? distanceKm * 0.4 : 0;
-  const total = subtotal + vat + deliveryFee;
+  const total = subtotal + deliveryFee;
 
   /* ---------------- ORDER ---------------- */
 
@@ -122,36 +127,36 @@ export default function CheckoutPage() {
       .join("\n");
 
     const message = `
-*New Order* 🛒
-*Order No*: ${data.orderId}
+  *New Order* 🛒
+  *Order No*: ${data.orderId}
 
-*Type*: ${mode.toUpperCase()}
+  *Type*: ${mode.toUpperCase()}
 
-*Name*: ${customer.fullName}
-*Phone*: ${customer.phone}
-*Email*: ${customer.email}
+  *Name*: ${customer.fullName}
+  *Phone*: ${customer.phone}
 
-${
-  mode === "delivery" ?
-    `*Area*: ${customer.area}
-*Address*: ${customer.addressDetails}
-*Distance*: ${distanceKm.toFixed(2)} km`
-  : `*Pickup*: Emerald Hill`
-}
 
-*Time*: ${customer.time}
+  ${
+    mode === "delivery" ?
+      `*Delivery Area*: ${customer.area}
+  *Address*: ${customer.addressDetails}
+  *Distance*: ${distanceKm.toFixed(2)} km`
+    : `*Pickup*: 56 fife avenue ( cnr Leopard Takawira & Fife Avenue shop number 2 Harare, Zimbabwe`
+  }
 
-*Items*:
-${itemsText}
-*Payment*: ${paymentMethod.toUpperCase()}
+  *Delivery Time*: ${customer.time}
 
-*Subtotal*: ${subtotal.toFixed(2)}
-*Delivery*: ${deliveryFee.toFixed(2)}
-*Total*: ${total.toFixed(2)}
-`;
+  *Items*:
+  ${itemsText}
+  *Payment Method*: ${paymentMethod.toUpperCase()}
+
+  *Subtotal*: ${subtotal.toFixed(2)}
+  *Delivery*: ${deliveryFee.toFixed(2)}
+  *Total*: ${total.toFixed(2)}
+  `;
 
     window.open(
-      `https://wa.me/263712471209?text=${encodeURIComponent(message)}`,
+      `https://wa.me/263778100032?text=${encodeURIComponent(message)}`,
       "_blank",
     );
 
@@ -317,7 +322,7 @@ ${itemsText}
         <div className="max-w-2xl mx-auto">
           <button
             onClick={handleOrder}
-            className="w-full bg-green-600 text-white py-4 rounded-xl flex justify-center gap-2"
+            className="flex items-center justify-center gap-2 w-full bg-green-600 text-white py-2 rounded-xl  "
           >
             Continue to WhatsApp <FaWhatsapp />
           </button>

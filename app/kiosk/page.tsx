@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import TopNavigation from "./components/topnavigation";
 import Toast from "./components/toast";
 import HeroSection from "./components/herosection";
+import { FaShoppingCart } from "react-icons/fa";
 
 /* ---------------- TYPES ---------------- */
 interface Product {
@@ -40,15 +41,15 @@ export default function KioskPage() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   // ---------------- VAT CALCULATION ---------------- //
-  const VAT_RATE = 0.15;
+  // const VAT_RATE = 0.15;
 
   const cartSubtotal = cart.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
-    0
+    0,
   );
 
-  const vatAmount = cartSubtotal * VAT_RATE;
-  const cartTotal = cartSubtotal + vatAmount;
+  // const vatAmount = cartSubtotal * VAT_RATE;
+  // const cartTotal = cartSubtotal + vatAmount;
 
   /* ---------------- FETCH PRODUCTS ---------------- */
   useEffect(() => {
@@ -76,7 +77,7 @@ export default function KioskPage() {
       const parsed: CartItem[] = JSON.parse(stored);
 
       const cleaned = parsed.filter(
-        (item) => item?.product && item.product._id
+        (item) => item?.product && item.product._id,
       );
 
       setCart(cleaned);
@@ -116,9 +117,9 @@ export default function KioskPage() {
 
       if (existing) {
         return prev.map((item) =>
-          item.product._id === product._id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          item.product._id === product._id ?
+            { ...item, quantity: item.quantity + 1 }
+          : item,
         );
       }
       setToast("Added to cart");
@@ -132,10 +133,10 @@ export default function KioskPage() {
   const increaseQty = (id: string) => {
     setCart((prev) =>
       prev.map((item) =>
-        item.product?._id === id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      )
+        item.product?._id === id ?
+          { ...item, quantity: item.quantity + 1 }
+        : item,
+      ),
     );
   };
 
@@ -144,11 +145,11 @@ export default function KioskPage() {
     setCart((prev) =>
       prev
         .map((item) =>
-          item.product?._id === id
-            ? { ...item, quantity: item.quantity - 1 }
-            : item
+          item.product?._id === id ?
+            { ...item, quantity: item.quantity - 1 }
+          : item,
         )
-        .filter((item) => item.quantity > 0 && item.product)
+        .filter((item) => item.quantity > 0 && item.product),
     );
   };
 
@@ -210,9 +211,9 @@ export default function KioskPage() {
                     <button
                       onClick={() => setActiveCategory(cat)}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-                        activeCategory === cat
-                          ? "bg-[#a59186] text-black"
-                          : "text-gray-800 hover:bg-white/10"
+                        activeCategory === cat ?
+                          "bg-[#a59186] text-black"
+                        : "text-gray-800 hover:bg-white/10"
                       }`}
                     >
                       {cat}
@@ -283,9 +284,9 @@ export default function KioskPage() {
 
                           <button
                             onClick={() => addToCart(p)}
-                            className="opacity-0 group-hover:opacity-100 transition text-sm font-semibold text-[#FF6F91] hover:underline border border-[#FF6F91] px-5 py-1 rounded-full"
+                            className="flex items-center justify-center gap-2 px-2 opacity-0 group-hover:opacity-100 transition text-sm font-semibold text-[#FF6F91] hover:underline border border-[#FF6F91] py-1 rounded-full"
                           >
-                            Add to Cart
+                            Add <FaShoppingCart />
                           </button>
                           <Link
                             href={`/kiosk/${p._id}`}
@@ -340,10 +341,9 @@ export default function KioskPage() {
 
               {/* Items */}
               <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-                {cart.length === 0 ? (
+                {cart.length === 0 ?
                   <p className="text-gray-400 text-sm">Your cart is empty.</p>
-                ) : (
-                  cart.map((item) => (
+                : cart.map((item) => (
                     <div
                       key={item.product._id}
                       className="flex gap-4 border-b border-white/10 pb-4"
@@ -351,9 +351,9 @@ export default function KioskPage() {
                       <div className="relative h-16 w-16 bg-[#111] rounded-md overflow-hidden">
                         <Image
                           src={
-                            item.product.images
-                              ? Object.values(item.product.images).flat()[0]
-                              : "https://images.unsplash.com/photo-1542291026-7eec264c27ff"
+                            item.product.images ?
+                              Object.values(item.product.images).flat()[0]
+                            : "https://images.unsplash.com/photo-1542291026-7eec264c27ff"
                           }
                           alt={item.product.name}
                           fill
@@ -393,8 +393,8 @@ export default function KioskPage() {
                             onClick={() =>
                               setCart((prev) =>
                                 prev.filter(
-                                  (i) => i.product._id !== item.product._id
-                                )
+                                  (i) => i.product._id !== item.product._id,
+                                ),
                               )
                             }
                             className="ml-auto text-xs text-red-400 hover:text-red-300"
@@ -405,7 +405,7 @@ export default function KioskPage() {
                       </div>
                     </div>
                   ))
-                )}
+                }
               </div>
 
               {/* Totals */}
@@ -415,14 +415,14 @@ export default function KioskPage() {
                   <span>{cartSubtotal.toFixed(2)}</span>
                 </div>
 
-                <div className="flex justify-between text-gray-400">
+                {/* <div className="flex justify-between text-gray-400">
                   <span>VAT (15%)</span>
-                  <span>{vatAmount.toFixed(2)}</span>
-                </div>
+                  <span>{0}</span>
+                </div> */}
 
                 <div className="flex justify-between text-white font-semibold pt-2">
                   <span>Total</span>
-                  <span>{cartTotal.toFixed(2)}</span>
+                  <span>{cartSubtotal.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -434,9 +434,9 @@ export default function KioskPage() {
                   className={`
             block text-center rounded-full py-3 font-semibold transition
             ${
-              cart.length === 0
-                ? "bg-gray-600 text-gray-300 pointer-events-none"
-                : "bg-white text-black hover:opacity-90"
+              cart.length === 0 ?
+                "bg-gray-600 text-gray-300 pointer-events-none"
+              : "bg-white text-black hover:opacity-90"
             }
           `}
                 >
