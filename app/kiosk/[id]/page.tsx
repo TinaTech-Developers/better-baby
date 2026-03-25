@@ -438,7 +438,7 @@ export default function ProductPage() {
                   : "bg-white text-black hover:opacity-90"
                 }`}
               >
-                Proceed to Checkout
+                Place Order
               </Link>
             </div>
           </motion.aside>

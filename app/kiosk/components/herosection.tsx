@@ -63,9 +63,9 @@ export default function HeroSection({ setView }: HeroSectionProps) {
 
         <button
           onClick={() => setView("store")}
-          className="mt-10 rounded-full bg-[#a59186] text-white px-8 py-4 hover:bg-white hover:text-black font-semibold hover:scale-105 transition"
+          className="mt-10 rounded-full bg-[#a59186] text-white px-8 py-2 hover:bg-white hover:text-black font-semibold hover:scale-105 transition"
         >
-          Browse All Products
+          View our Catalog
         </button>
       </div>
     </section>

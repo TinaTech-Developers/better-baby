@@ -9,8 +9,6 @@ export default function CheckoutPage() {
 
   const [cart, setCart] = useState<any[]>([]);
   const [mode, setMode] = useState("delivery");
-
-  const [distanceKm, setDistanceKm] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("");
 
   const [customer, setCustomer] = useState({
@@ -19,29 +17,67 @@ export default function CheckoutPage() {
     phone: "",
     area: "",
     addressDetails: "",
-    note: "",
+    date: "",
     time: "",
+    note: "",
   });
 
+  // ---------------- ZONES AND PRICES ----------------
   const DELIVERY_ZONES = {
-    Belvedere: 5,
-    Avondale: 6,
-    Borrowdale: 12,
-    CBD: 4,
-    Ruwa: 15,
-    Chisipite: 11,
-    "Mt Pleasant": 8,
-    Westgate: 12,
-    Highfields: 13,
-    "Msasa Park": 12,
+    "Zone 1": {
+      price: 4,
+      areas: [
+        "CBD / Avenues",
+        "Belgravia",
+        "Milton Park",
+        "Avondale",
+        "Alexandra Park",
+        "Eastlea",
+      ],
+    },
+    "Zone 2": {
+      price: 6,
+      areas: [
+        "Greendale",
+        "Mount Pleasant",
+        "Newlands",
+        "Highlands",
+        "Waterfalls",
+      ],
+    },
+    "Zone 3": {
+      price: 8,
+      areas: [
+        "Borrowdale",
+        "Msasa",
+        "Msasa Park",
+        "Hatfield",
+        "Budiriro",
+        "Glen View",
+        "Glen Norah",
+      ],
+    },
+    "Zone 4": {
+      price: 10,
+      areas: ["Chitungwiza", "Ruwa", "Epworth", "Norton"],
+    },
   };
 
+  // Flatten for easy lookup
+  const AREA_TO_PRICE: Record<string, number> = {};
+  Object.values(DELIVERY_ZONES).forEach((zone) =>
+    zone.areas.forEach((area) => {
+      AREA_TO_PRICE[area] = zone.price;
+    }),
+  );
+
+  // Load cart from localStorage
   useEffect(() => {
     const stored = localStorage.getItem("cart");
     if (stored) setCart(JSON.parse(stored));
   }, []);
 
-  // ✅ Auto-fill
+  // Auto-fill user info if logged in
   useEffect(() => {
     if (!session || !session.user) return;
 
@@ -52,47 +88,31 @@ export default function CheckoutPage() {
     }));
   }, [session]);
 
-  /* ---------------- DISTANCE ---------------- */
-
-  const calculateDistance = async (destination: string) => {
-    if (!destination) return;
-
-    const res = await fetch("/api/distance", {
-      method: "POST",
-      body: JSON.stringify({
-        origin: "Emerald Hill, Harare",
-        destination,
-      }),
-    });
-
-    const data = await res.json();
-    setDistanceKm(data.distanceKm || 0);
-  };
-
-  /* ---------------- TOTALS ---------------- */
-
+  // ---------------- TOTALS ----------------
   const subtotal = cart.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
     0,
   );
-
   const vat = subtotal * 0.15;
-  const deliveryFee = mode === "delivery" ? distanceKm * 0.4 : 0;
+  const deliveryFee =
+    mode === "delivery" ? AREA_TO_PRICE[customer.area] || 0 : 0;
   const total = subtotal + deliveryFee;
 
-  /* ---------------- ORDER ---------------- */
-
+  // ---------------- ORDER ----------------
   const handleOrder = async () => {
-    if (!customer.fullName || !customer.phone) {
-      alert("Fill required fields");
+    if (
+      !customer.fullName ||
+      !customer.phone ||
+      !customer.date ||
+      !customer.time
+    ) {
+      alert("Fill required fields including delivery date and time");
       return;
     }
 
     const res = await fetch("/api/orders", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         customer,
         items: cart,
@@ -101,7 +121,6 @@ export default function CheckoutPage() {
         delivery: deliveryFee,
         total,
         mode,
-        distanceKm,
         paymentMethod,
       }),
     });
@@ -110,8 +129,8 @@ export default function CheckoutPage() {
       alert("Order Failed");
       return;
     }
-    const data = await res.json();
 
+    const data = await res.json();
     if (!data.orderId) {
       alert("Order not created");
       return;
@@ -127,33 +146,35 @@ export default function CheckoutPage() {
       .join("\n");
 
     const message = `
-  *New Order* 🛒
-  *Order No*: ${data.orderId}
+*New Order* 🛒
+*Order No*: ${data.orderId}
 
-  *Type*: ${mode.toUpperCase()}
+*Type*: ${mode.toUpperCase()}
+*Name*: ${customer.fullName}
+*Phone*: ${customer.phone}
 
-  *Name*: ${customer.fullName}
-  *Phone*: ${customer.phone}
+${
+  mode === "delivery" ?
+    `*Delivery Area*: ${customer.area}
+*Address*: ${customer.addressDetails}
+*Delivery Fee*: ${deliveryFee.toFixed(2)}
+*Delivery Date*: ${customer.date}
+*Delivery Time*: ${customer.time}
+${customer.note ? `\n*Special Instructions*: ${customer.note}` : ""}
+`
+  : `*Pickup*: 56 Fife Avenue (Cnr Leopard Takawira & Fife Avenue) Shop No.2, Harare
+*Pickup Time*: ${customer.time}`
+}
 
+*Items*:
+${itemsText}
 
-  ${
-    mode === "delivery" ?
-      `*Delivery Area*: ${customer.area}
-  *Address*: ${customer.addressDetails}
-  *Distance*: ${distanceKm.toFixed(2)} km`
-    : `*Pickup*: 56 fife avenue ( cnr Leopard Takawira & Fife Avenue shop number 2 Harare, Zimbabwe`
-  }
+*Payment Method*: ${paymentMethod.toUpperCase()}
 
-  *Delivery Time*: ${customer.time}
-
-  *Items*:
-  ${itemsText}
-  *Payment Method*: ${paymentMethod.toUpperCase()}
-
-  *Subtotal*: ${subtotal.toFixed(2)}
-  *Delivery*: ${deliveryFee.toFixed(2)}
-  *Total*: ${total.toFixed(2)}
-  `;
+*Subtotal*: ${subtotal.toFixed(2)}
+*Delivery*: ${deliveryFee.toFixed(2)}
+*Total*: ${total.toFixed(2)}
+`;
 
     window.open(
       `https://wa.me/263778100032?text=${encodeURIComponent(message)}`,
@@ -163,6 +184,13 @@ export default function CheckoutPage() {
     localStorage.removeItem("cart");
     setCart([]);
   };
+
+  // ---------------- HELPER: TODAY AND MAX DATE ----------------
+  const today = new Date();
+  const minDate = today.toISOString().split("T")[0];
+  const maxDate = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
 
   return (
     <div className="min-h-screen bg-gray-100 pb-32">
@@ -179,7 +207,6 @@ export default function CheckoutPage() {
           >
             Delivery
           </button>
-
           <button
             onClick={() => setMode("collection")}
             className={`flex-1 py-2 rounded-lg ${
@@ -196,40 +223,55 @@ export default function CheckoutPage() {
             <select
               className="input"
               value={customer.area}
-              onChange={(e) => {
-                const area = e.target.value;
-
-                setCustomer({ ...customer, area });
-
-                setDistanceKm(
-                  DELIVERY_ZONES[area as keyof typeof DELIVERY_ZONES] || 0,
-                );
-              }}
+              onChange={(e) =>
+                setCustomer({ ...customer, area: e.target.value })
+              }
             >
               <option value="">Select Area</option>
-              {Object.keys(DELIVERY_ZONES).map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone}
-                </option>
+              {Object.entries(DELIVERY_ZONES).map(([zoneName, zone]) => (
+                <optgroup key={zoneName} label={`${zoneName} ($${zone.price})`}>
+                  {zone.areas.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
 
             <input
               placeholder="House / Street"
-              onChange={(e) => {
-                const value = e.target.value;
-                setCustomer({
-                  ...customer,
-                  addressDetails: value,
-                });
-
-                calculateDistance(`${customer.area} ${value}`);
-              }}
               className="input"
+              onChange={(e) =>
+                setCustomer({ ...customer, addressDetails: e.target.value })
+              }
+            />
+            <textarea
+              placeholder="Additional notes (e.g. call on arrival, gate code, etc.)"
+              className="input"
+              rows={3}
+              value={customer.note || ""}
+              onChange={(e) =>
+                setCustomer({ ...customer, note: e.target.value })
+              }
             />
 
+            {/* DELIVERY DATE */}
+            <input
+              type="date"
+              className="input"
+              value={customer.date || ""}
+              onChange={(e) =>
+                setCustomer({ ...customer, date: e.target.value })
+              }
+              min={minDate}
+              max={maxDate}
+            />
+
+            {/* DELIVERY TIME */}
             <select
               className="input"
+              value={customer.time || ""}
               onChange={(e) =>
                 setCustomer({ ...customer, time: e.target.value })
               }
@@ -243,9 +285,9 @@ export default function CheckoutPage() {
 
             <div className="bg-white p-5 rounded-2xl shadow-sm space-y-3">
               <h2 className="text-gray-800 font-medium">Payment Method</h2>
-
               <select
                 className="input"
+                value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
               >
                 <option value="">Select Payment Method</option>
@@ -255,9 +297,9 @@ export default function CheckoutPage() {
               </select>
             </div>
 
-            {distanceKm > 0 && (
+            {deliveryFee > 0 && (
               <p className="text-gray-600 text-sm">
-                Distance: {distanceKm.toFixed(2)} km
+                Delivery Fee: {deliveryFee.toFixed(2)}
               </p>
             )}
           </div>
@@ -266,14 +308,17 @@ export default function CheckoutPage() {
         {/* COLLECTION */}
         {mode === "collection" && (
           <div className="bg-white p-5 rounded-2xl shadow-sm">
-            <p className="text-gray-600">Pickup: Emerald Hill, Harare</p>
-
+            <p className="text-gray-600">
+              Pickup: 56 Fife Avenue (Cnr Leopard Takawira & Fife Avenue) Shop
+              No.2, Harare
+            </p>
             <input
               type="time"
+              className="input mt-3"
+              value={customer.time || ""}
               onChange={(e) =>
                 setCustomer({ ...customer, time: e.target.value })
               }
-              className="input mt-3"
             />
           </div>
         )}
@@ -282,19 +327,19 @@ export default function CheckoutPage() {
         <div className="bg-white p-5 rounded-2xl shadow-sm space-y-3">
           <input
             placeholder="Full Name"
+            className="input"
             value={customer.fullName}
             onChange={(e) =>
               setCustomer({ ...customer, fullName: e.target.value })
             }
-            className="input"
           />
-
           <input
             placeholder="Phone"
+            className="input"
+            value={customer.phone}
             onChange={(e) =>
               setCustomer({ ...customer, phone: e.target.value })
             }
-            className="input"
           />
         </div>
 
@@ -304,12 +349,10 @@ export default function CheckoutPage() {
             <span>Subtotal</span>
             <span>{subtotal.toFixed(2)}</span>
           </div>
-
           <div className="flex justify-between text-gray-600">
             <span>Delivery</span>
             <span>{deliveryFee.toFixed(2)}</span>
           </div>
-
           <div className="flex justify-between font-bold text-gray-800 mt-2">
             <span>Total</span>
             <span>{total.toFixed(2)}</span>
@@ -322,7 +365,7 @@ export default function CheckoutPage() {
         <div className="max-w-2xl mx-auto">
           <button
             onClick={handleOrder}
-            className="flex items-center justify-center gap-2 w-full bg-green-600 text-white py-2 rounded-xl  "
+            className="flex items-center justify-center gap-2 w-full bg-green-600 text-white py-2 rounded-xl"
           >
             Continue to WhatsApp <FaWhatsapp />
           </button>

@@ -14,12 +14,14 @@ const OrderSchema = new mongoose.Schema(
       phone: { type: String, required: true },
       area: String,
       addressDetails: String,
-      time: String,
+      date: String, // new field for delivery date
+      time: String, // delivery or pickup time
+      note: String, // optional note
     },
 
     paymentMethod: String,
-    distanceKm: Number,
-    mode: String,
+    distanceKm: Number, // optional, keep if needed for future
+    mode: String, // delivery or collection
     items: [
       {
         product: Object,
@@ -40,8 +42,7 @@ const OrderSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-export default mongoose.models.Order || mongoose.model("Order", OrderSchema);
-// import mongoose from "mongoose";
+export default mongoose.models.Order || mongoose.model("Order", OrderSchema); // import mongoose from "mongoose";
 
 // const OrderSchema = new mongoose.Schema(
 //   {

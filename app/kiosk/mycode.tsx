@@ -40,7 +40,7 @@ export default function KioskPage() {
   const VAT_RATE = 0.15;
   const cartSubtotal = cart.reduce(
     (sum, item) => sum + item.product.price * item.quantity,
-    0
+    0,
   );
   const vatAmount = cartSubtotal * VAT_RATE;
   const cartTotal = cartSubtotal + vatAmount;
@@ -105,9 +105,9 @@ export default function KioskPage() {
       const exists = prev.find((item) => item.product._id === product._id);
       if (exists) {
         return prev.map((item) =>
-          item.product._id === product._id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          item.product._id === product._id ?
+            { ...item, quantity: item.quantity + 1 }
+          : item,
         );
       }
       setToast("Added to cart");
@@ -119,10 +119,10 @@ export default function KioskPage() {
   const increaseQty = (id: string) => {
     setCart((prev) =>
       prev.map((item) =>
-        item.product._id === id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      )
+        item.product._id === id ?
+          { ...item, quantity: item.quantity + 1 }
+        : item,
+      ),
     );
   };
 
@@ -130,11 +130,11 @@ export default function KioskPage() {
     setCart((prev) =>
       prev
         .map((item) =>
-          item.product._id === id
-            ? { ...item, quantity: item.quantity - 1 }
-            : item
+          item.product._id === id ?
+            { ...item, quantity: item.quantity - 1 }
+          : item,
         )
-        .filter((item) => item.quantity > 0)
+        .filter((item) => item.quantity > 0),
     );
   };
 
@@ -170,9 +170,9 @@ export default function KioskPage() {
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`py-2 px-4 whitespace-nowrap font-semibold rounded-full transition ${
-                  activeCategory === cat
-                    ? "bg-[#FF6F91] text-white shadow-lg"
-                    : "bg-[#7EC8E3] text-[#333] hover:bg-[#FF6F91]/80"
+                  activeCategory === cat ?
+                    "bg-[#FF6F91] text-white shadow-lg"
+                  : "bg-[#7EC8E3] text-[#333] hover:bg-[#FF6F91]/80"
                 }`}
               >
                 {cat}
@@ -284,9 +284,9 @@ export default function KioskPage() {
                 <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-[#F9F9F9]">
                   <Image
                     src={
-                      item.product.images
-                        ? Object.values(item.product.images).flat()[0]
-                        : "/placeholder.png"
+                      item.product.images ?
+                        Object.values(item.product.images).flat()[0]
+                      : "/placeholder.png"
                     }
                     alt={item.product.name}
                     fill
@@ -328,7 +328,7 @@ export default function KioskPage() {
               onClick={() => setCartOpen(false)}
               className="block text-center bg-[#FF6F91] text-white py-3 mt-3 rounded-lg font-semibold"
             >
-              Proceed to Checkout
+              Place Order
             </Link>
           </div>
         </motion.div>

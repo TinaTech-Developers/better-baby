@@ -8,7 +8,8 @@ import TopNavigation from "./components/topnavigation";
 import Toast from "./components/toast";
 import HeroSection from "./components/herosection";
 import { FaShoppingCart } from "react-icons/fa";
-
+import Stack from "@mui/material/Stack";
+import LinearProgress from "@mui/material/LinearProgress";
 /* ---------------- TYPES ---------------- */
 interface Product {
   _id: string;
@@ -172,17 +173,21 @@ export default function KioskPage() {
     setTimeout(() => setToast(null), 2000);
   }, [wishlist]);
 
-  if (loading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center bg-[#0B0B0B]
- text-white"
-      >
-        <p>Loading products...</p>
-      </div>
-    );
-  }
+ if (loading) {
+  return (
+    <div className="min-h-screen flex flex-col justify-center items-center bg-[#0B0B0B] text-white">
+      
+      {/* Loader Bar */}
+      <Stack sx={{ width: "80%", maxWidth: 400 }} spacing={2}>
+        <LinearProgress color="success" />
+      </Stack>
 
+      {/* Text */}
+      <p className="mt-4 text-sm text-gray-400">
+        Loading products...
+      </p>
+    </div>
+  );}
   return (
     <>
       <TopNavigation
@@ -440,7 +445,7 @@ export default function KioskPage() {
             }
           `}
                 >
-                  Proceed to Checkout
+                  Place Order
                 </Link>
               </div>
             </motion.aside>
