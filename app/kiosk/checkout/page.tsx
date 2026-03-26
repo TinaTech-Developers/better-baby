@@ -23,53 +23,90 @@ export default function CheckoutPage() {
   });
 
   // ---------------- ZONES AND PRICES ----------------
-  const DELIVERY_ZONES = {
-    "Zone 1": {
-      price: 4,
-      areas: [
-        "CBD / Avenues",
-        "Belgravia",
-        "Milton Park",
-        "Avondale",
-        "Alexandra Park",
-        "Eastlea",
-      ],
-    },
-    "Zone 2": {
-      price: 6,
-      areas: [
-        "Greendale",
-        "Mount Pleasant",
-        "Newlands",
-        "Highlands",
-        "Waterfalls",
-      ],
-    },
-    "Zone 3": {
-      price: 8,
-      areas: [
-        "Borrowdale",
-        "Msasa",
-        "Msasa Park",
-        "Hatfield",
-        "Budiriro",
-        "Glen View",
-        "Glen Norah",
-      ],
-    },
-    "Zone 4": {
-      price: 10,
-      areas: ["Chitungwiza", "Ruwa", "Epworth", "Norton"],
-    },
+  // const DELIVERY_ZONES = {
+  //   "Zone 1": {
+  //     price: 4,
+  //     areas: [
+  //       "CBD / Avenues",
+  //       "Belgravia",
+  //       "Milton Park",
+  //       "Avondale",
+  //       "Alexandra Park",
+  //       "Eastlea",
+  //     ],
+  //   },
+  //   "Zone 2": {
+  //     price: 6,
+  //     areas: [
+  //       "Greendale",
+  //       "Mount Pleasant",
+  //       "Newlands",
+  //       "Highlands",
+  //       "Waterfalls",
+  //     ],
+  //   },
+  //   "Zone 3": {
+  //     price: 8,
+  //     areas: [
+  //       "Borrowdale",
+  //       "Msasa",
+  //       "Msasa Park",
+  //       "Hatfield",
+  //       "Budiriro",
+  //       "Glen View",
+  //       "Glen Norah",
+  //     ],
+  //   },
+  //   "Zone 4": {
+  //     price: 10,
+  //     areas: ["Chitungwiza", "Ruwa", "Epworth", "Norton"],
+  //   },
+  // };
+
+  // ---------------- ZONES AND PRICES ----------------
+  const AREA_TO_PRICE: Record<string, number> = {
+    CBD: 3,
+    AVONDALE: 5,
+    EASTLEA: 5,
+    BELVEDERE: 5,
+    "MT PLEASANT": 6,
+    "MT PLEASANT HEIGHTS": 10,
+    CRANEBORNE: 5,
+    "BORROWDALE VILLAGE": 7,
+    "BORROWDALE BROKE": 12,
+    HARTFILD: 7,
+    WATERFALLS: 7,
+    CHITUNGWIZA: 15,
+    "GLEN V": 8,
+    BUDIRIRO: 8,
+    HIGHFIELD: 7,
+    WARREN: 6,
+    KUWADZANA: 7,
+    "KUWADZANA EXT": 8,
+    WESTLEA: 6,
+    MADOKERO: 7,
+    TYNWARD: 7,
+    DZ: 8,
+    SOUTHERTON: 5,
+    GENORAH: 8,
+    MUFAKOSE: 8,
+    KAMBUZUMA: 7,
+    NEWLANDS: 5,
+    HIGHLANDS: 7,
+    CHISIPITI: 8,
+    CHISHAWASHA: 10,
+    MBARE: 5,
+    AVONLEA: 5,
+    WESTGATE: 8,
   };
 
   // Flatten for easy lookup
-  const AREA_TO_PRICE: Record<string, number> = {};
-  Object.values(DELIVERY_ZONES).forEach((zone) =>
-    zone.areas.forEach((area) => {
-      AREA_TO_PRICE[area] = zone.price;
-    }),
-  );
+  // const AREA_TO_PRICE: Record<string, number> = {};
+  // Object.values(DELIVERY_ZONES).forEach((zone) =>
+  //   zone.areas.forEach((area) => {
+  //     AREA_TO_PRICE[area] = zone.price;
+  //   }),
+  // );
 
   // Load cart from localStorage
   useEffect(() => {
@@ -228,17 +265,12 @@ ${itemsText}
               }
             >
               <option value="">Select Area</option>
-              {Object.entries(DELIVERY_ZONES).map(([zoneName, zone]) => (
-                <optgroup key={zoneName} label={`${zoneName} ($${zone.price})`}>
-                  {zone.areas.map((area) => (
-                    <option key={area} value={area}>
-                      {area}
-                    </option>
-                  ))}
-                </optgroup>
+              {Object.entries(AREA_TO_PRICE).map(([area, price]) => (
+                <option key={area} value={area}>
+                  {area} - ${price}
+                </option>
               ))}
             </select>
-
             <input
               placeholder="House / Street"
               className="input"
