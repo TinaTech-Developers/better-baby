@@ -11,6 +11,9 @@ export default function CheckoutPage() {
   const [mode, setMode] = useState("delivery");
   const [paymentMethod, setPaymentMethod] = useState("");
 
+  const [showModal, setShowModal] = useState(false); // to show/hide modal
+  const [orderId, setOrderId] = useState(""); // store orderId to display
+
   const [customer, setCustomer] = useState({
     fullName: "",
     email: "",
@@ -147,49 +150,46 @@ export default function CheckoutPage() {
       return;
     }
 
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customer,
-        items: cart,
-        subtotal,
-        vat,
-        delivery: deliveryFee,
-        total,
-        mode,
-        paymentMethod,
-      }),
-    });
+    try {
+      // 1️⃣ Create order in your database
+      const orderRes = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer,
+          items: cart,
+          subtotal,
+          vat,
+          delivery: deliveryFee,
+          total,
+          mode,
+          paymentMethod,
+        }),
+      });
 
-    if (!res.ok) {
-      alert("Order Failed");
-      return;
-    }
+      const orderData = await orderRes.json();
 
-    const data = await res.json();
-    if (!data.orderId) {
-      alert("Order not created");
-      return;
-    }
+      if (!orderData.orderId) {
+        alert("Failed to create order");
+        return;
+      }
 
-    const itemsText = cart
-      .map(
-        (item) =>
-          `- ${item.product.name} x${item.quantity} (${item.product.currency} ${
-            item.product.price * item.quantity
-          })`,
-      )
-      .join("\n");
+      // 2️⃣ Prepare WhatsApp message including orderId
+      const itemsText = cart
+        .map(
+          (item) =>
+            `- ${item.product.name} x${item.quantity} (${item.product.currency} ${
+              item.product.price * item.quantity
+            })`,
+        )
+        .join("\n");
 
-    const message = `
+      const message = `
 *New Order* 🛒
-*Order No*: ${data.orderId}
-
+*Order No*: ${orderData.orderId}
 *Type*: ${mode.toUpperCase()}
 *Name*: ${customer.fullName}
 *Phone*: ${customer.phone}
-
 ${
   mode === "delivery" ?
     `*Delivery Area*: ${customer.area}
@@ -197,29 +197,42 @@ ${
 *Delivery Fee*: ${deliveryFee.toFixed(2)}
 *Delivery Date*: ${customer.date}
 *Delivery Time*: ${customer.time}
-${customer.note ? `\n*Special Instructions*: ${customer.note}` : ""}
-`
-  : `*Pickup*: 56 Fife Avenue (Cnr Leopard Takawira & Fife Avenue) Shop No.2, Harare
+${customer.note ? `*Special Instructions*: ${customer.note}` : ""}`
+  : `*Pickup*: 56 Fife Avenue, Shop No.2, Harare
 *Pickup Time*: ${customer.time}`
 }
-
 *Items*:
 ${itemsText}
-
 *Payment Method*: ${paymentMethod.toUpperCase()}
-
 *Subtotal*: ${subtotal.toFixed(2)}
 *Delivery*: ${deliveryFee.toFixed(2)}
 *Total*: ${total.toFixed(2)}
 `;
 
-    window.open(
-      `https://wa.me/263778100032?text=${encodeURIComponent(message)}`,
-      "_blank",
-    );
+      // 3️⃣ Send WhatsApp message
+      const whatsappRes = await fetch("/api/send-whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
 
-    localStorage.removeItem("cart");
-    setCart([]);
+      const whatsappData = await whatsappRes.json();
+
+      if (!whatsappData.success) {
+        alert("Failed to send order to WhatsApp");
+        return;
+      }
+
+      // 4️⃣ Clear cart and show thank-you
+      localStorage.removeItem("cart");
+      setCart([]);
+      // Instead of alert
+      setOrderId(orderData.orderId); // store the generated orderId
+      setShowModal(true); // show the modal
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong while processing your order.");
+    }
   };
 
   // ---------------- HELPER: TODAY AND MAX DATE ----------------
@@ -413,6 +426,24 @@ ${itemsText}
           color: #4b5563;
         }
       `}</style>
+
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 bg-opacity-50 z-50">
+          <div className="bg-white rounded-xl p-8 max-w-sm w-full text-center space-y-4">
+            <h2 className="text-xl font-bold text-green-600">Order Sent ✅</h2>
+            <p>
+              Your order <strong>{orderId}</strong> has been successfully
+              created and sent to Batter Baby.
+            </p>
+            <button
+              onClick={() => setShowModal(false)}
+              className="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
