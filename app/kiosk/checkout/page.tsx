@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { FaWhatsapp } from "react-icons/fa";
-
+import { motion } from "framer-motion";
 export default function CheckoutPage() {
   const { data: session } = useSession();
 
@@ -226,6 +226,20 @@ ${itemsText}
       // 4️⃣ Clear cart and show thank-you
       localStorage.removeItem("cart");
       setCart([]);
+
+      setCustomer({
+        fullName: session?.user?.name ?? "",
+        email: session?.user?.email ?? "",
+        phone: "",
+        area: "",
+        addressDetails: "",
+        date: "",
+        time: "",
+        note: "",
+      });
+      setPaymentMethod("");
+      setMode("delivery"); // or "collection", depending on default
+
       // Instead of alert
       setOrderId(orderData.orderId); // store the generated orderId
       setShowModal(true); // show the modal
@@ -428,21 +442,35 @@ ${itemsText}
       `}</style>
 
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 bg-opacity-50 z-50">
-          <div className="bg-white rounded-xl p-8 max-w-sm w-full text-center space-y-4">
-            <h2 className="text-xl font-bold text-green-600">Order Sent ✅</h2>
-            <p>
-              Your order <strong>{orderId}</strong> has been successfully
-              created and sent to Batter Baby.
+        <motion.div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            className="bg-white rounded-lg p-8 max-w-sm w-full text-center space-y-4"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h2 className="text-xl font-bold text-green-600">
+              Order Submitted Successfully ✅
+            </h2>
+            <p className="text-gray-600 text-sm">
+              Thank you! Your order with ID <strong>{orderId}</strong> has been
+              successfully placed and forwarded to <strong>Batter Baby</strong>.
+              We will process it promptly.
             </p>
             <button
               onClick={() => setShowModal(false)}
-              className="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg"
+              className="mt-4 bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition"
             >
               Close
             </button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );
