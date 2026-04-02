@@ -1,7 +1,7 @@
 // /app/(main)/layout.tsx
 
-import Navbar from "./navbar";
-import Footer from "./footer";
+import Navbar from "./_components/navbar";
+import Footer from "./_components/footer";
 
 export default function MainLayout({
   children,

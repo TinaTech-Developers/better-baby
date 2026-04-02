@@ -10,7 +10,7 @@ export default function Footer() {
         {/* Brand */}
         <div>
           <Image
-            src="/logo.png"
+            src="/BetterBaby_Logo-removebg-preview.png"
             alt="BetterBaby"
             width={120}
             height={40}

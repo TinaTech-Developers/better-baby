@@ -2,17 +2,29 @@
 
 import Image from "next/image";
 import { useRef } from "react";
+import ProductSlider from "./productslider";
 
 const products = [
-  { name: "Chelino - Next to Me 2 in 1", price: "$160.00", image: "/p2.png" },
-  { name: "Vivo Camp Cot", price: "$90.00", image: "/p3.png" },
-  { name: "Chelino Prima Rossi Bath", price: "$170.00", image: "/p4.png" },
+  { name: "Chelino - Next to Me 2 in 1", price: "$160.00", image: "/p2.jpg" },
+  { name: "Vivo Camp Cot", price: "$90.00", image: "/p3.jpg" },
+  { name: "Chelino Prima Rossi Bath", price: "$170.00", image: "/p4.webp" },
+  {
+    name: " BMW Electric Kids Ride-on Motorbike",
+    price: "$120.00",
+    image: "/9p.webp",
+  },
   {
     name: "Chelino Royal 3-in-1 High Chair",
     price: "$300.00",
-    image: "/p5.png",
+    image: "/p4.jpg",
   },
-  { name: "Chelino Deluxe Carry Cot", price: "$70.00", image: "/p6.png" },
+  {
+    name: " Kids' Electric Vehicles Outdoor R",
+    price: "$120.00",
+    image: "/p8.jpg",
+  },
+  { name: "Chelino Deluxe Carry Cot", price: "$70.00", image: "/p5.jpeg" },
+  { name: "Chelino Deluxe Baby Bouncer", price: "$120.00", image: "/p6.webp" },
 ];
 
 export default function BestSellerSection() {
@@ -21,10 +33,11 @@ export default function BestSellerSection() {
   const scroll = (dir: "left" | "right") => {
     if (!sliderRef.current) return;
 
-    const width = sliderRef.current.clientWidth;
+    const firstChild = sliderRef.current.children[0] as HTMLElement;
+    const cardWidth = firstChild.clientWidth;
 
     sliderRef.current.scrollBy({
-      left: dir === "left" ? -width : width,
+      left: dir === "left" ? -cardWidth : cardWidth,
       behavior: "smooth",
     });
   };
@@ -83,7 +96,7 @@ export default function BestSellerSection() {
             </button>
 
             {/* SLIDER */}
-            <div
+            {/* <div
               ref={sliderRef}
               className="flex overflow-hidden scroll-smooth w-full"
             >
@@ -123,7 +136,9 @@ export default function BestSellerSection() {
                   </p>
                 </div>
               ))}
-            </div>
+            </div> */}
+
+            <ProductSlider products={products} sliderRef={sliderRef} />
           </div>
         </div>
       </div>
