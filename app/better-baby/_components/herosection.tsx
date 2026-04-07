@@ -14,8 +14,18 @@ const products = [
     image: "/4.png",
     discount: "5% off",
   },
+
   {
     id: 2,
+    name: "Lamborghini Electric Vehicles Battery",
+    subtitle:
+      "Ride on Car for Kids 12V Licensed Lamborghini Electric Vehicles Battery Powered Sports Car with Control 0 out of 5 stars, based on reviews.",
+    price: "$550.00",
+    image: "/center6.png",
+    discount: "12% off",
+  },
+  {
+    id: 3,
     name: "Luxury Baby Stroller",
     subtitle: "Comfort Ride",
     price: "$520.00",
@@ -23,12 +33,21 @@ const products = [
     discount: "10% off",
   },
   {
-    id: 3,
-    name: "Premium Travel Stroller",
-    subtitle: "Foldable & Light",
+    id: 4,
+    name: "Baby Crib Nursery",
+    subtitle: "Safe Sleep",
     price: "$450.00",
-    image: "/center2.png",
+    image:
+      "/white-baby-crib-nursery-furniture-infant-bedding-cradle-against-transparent-background-for-baby-product-branding-nursery-designs-or-furniture-marketing-free-png.webp",
     discount: "8% off",
+  },
+  {
+    id: 5,
+    name: "Motorbike Ride-On Toy",
+    subtitle: "Fun Ride",
+    price: "$400.00",
+    image: "/bike-removebg-preview.png",
+    discount: "15% off",
   },
 ];
 
@@ -83,9 +102,9 @@ export default function HeroSection() {
             {products[current].subtitle}
           </p>
 
-          <h2 className="text-[32px] font-bold text-[#0F0F0F]">
+          {/* <h2 className="text-[32px] font-bold text-[#0F0F0F]">
             {products[current].price}
-          </h2>
+          </h2> */}
 
           <div className="w-[320px] bg-gray-200 h-2 rounded-full">
             <div className="bg-[#C6B6A6] h-2 w-[45%] rounded-full"></div>
@@ -97,8 +116,8 @@ export default function HeroSection() {
           </div>
 
           <Link
-            href="#"
-            className="inline-flex items-center gap-2 font-semibold text-[#0F0F0F] mt-2"
+            href="/kiosk"
+            className="inline-flex items-center justify-between gap-2 font-semibold text-[#0F0F0F] mt-2"
           >
             SHOP NOW →
           </Link>
@@ -109,7 +128,7 @@ export default function HeroSection() {
           <div className="absolute w-[400px] h-[400px] bg-white rounded-full opacity-60"></div>
 
           {/* 🔥 Animated Image */}
-          <div className="relative w-[520px] h-[520px] translate-x-10 z-10">
+          <div className="relative w-[450px] h-[450px] translate-x-10 z-10">
             <AnimatePresence mode="wait">
               <motion.div
                 key={products[current].id}
@@ -173,9 +192,9 @@ export default function HeroSection() {
               {sideProducts[sideCurrent].name}
             </h4>
 
-            <p className="text-[#A38F7B] font-bold mt-1">
+            {/* <p className="text-[#A38F7B] font-bold mt-1">
               {sideProducts[sideCurrent].price}
-            </p>
+            </p> */}
           </div>
 
           <div>

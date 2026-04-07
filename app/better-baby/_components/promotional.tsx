@@ -20,7 +20,7 @@ export default function Promotion() {
             </h2>
 
             <Link
-              href="#"
+              href="/better-baby/contact"
               className="inline-block mt-6 text-sm tracking-wide hover:underline"
             >
               MAKE ENQUIRY →

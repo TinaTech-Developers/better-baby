@@ -57,7 +57,7 @@ export default function ProductSlider({ products, sliderRef }: any) {
 
           <h4 className="text-sm text-[#0F0F0F] mt-1">{product.name}</h4>
 
-          <p className="text-[#A38F7B] font-semibold mt-1">{product.price}</p>
+          {/* <p className="text-[#A38F7B] font-semibold mt-1">{product.price}</p> */}
         </div>
       ))}
     </div>

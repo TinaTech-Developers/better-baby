@@ -6,17 +6,26 @@ const featuredProducts = [
   {
     name: "Soft Baby Blanket",
     price: "$25.00",
-    image: "/products/blanket.jpg",
+    image: "/baby_blankent.jpg",
   },
-  { name: "Cute Baby Romper", price: "$18.00", image: "/products/romper.jpg" },
-  { name: "Baby Teether Set", price: "$12.00", image: "/products/teether.jpg" },
+  { name: "Cute Baby Romper", price: "$18.00", image: "/romber.jpg" },
+  {
+    name: "Baby Teether Set",
+    price: "$12.00",
+    image: "/SET-TM-PTN-TURQUOISE-1.webp",
+  },
   {
     name: "Stroller Organizer",
     price: "$30.00",
-    image: "/products/stroller.jpg",
+    image: "/24-06-LEJOUX-BLACK-ELASTICATED-BAG-3-Web-1500.webp",
   },
-  { name: "Nursery Mobile", price: "$22.00", image: "/products/mobile.jpg" },
-  { name: "Baby Shoes", price: "$15.00", image: "/products/shoes.jpg" },
+  { name: "Nursery Mobile", price: "$22.00", image: "/s-l1200.jpg" },
+  {
+    name: "Baby Shoes",
+    price: "$15.00",
+    image:
+      "/cceb4145-9a72-4743-9981-6d6b0963c25b.1d095036e538ccf52dfc52ee41506241.webp",
+  },
 ];
 
 export default function FeaturedProducts() {

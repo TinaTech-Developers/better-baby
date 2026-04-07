@@ -7,7 +7,7 @@ import BrandStory from "./_components/brandstory";
 import Testimonials from "./_components/testimonials";
 import FeaturedProducts from "./_components/featuredproducts";
 
-function page() {
+function WebHome() {
   return (
     <>
       <HeroSection />
@@ -21,4 +21,4 @@ function page() {
   );
 }
 
-export default page;
+export default WebHome;

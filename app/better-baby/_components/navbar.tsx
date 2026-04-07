@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ShoppingCart, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { GrCatalog } from "react-icons/gr";
 
 export default function Navbar() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -39,8 +40,13 @@ export default function Navbar() {
         </div>
 
         {/* Icons */}
-        <Link href="/kiosk" className="flex items-center gap-6">
-          <ShoppingCart className="cursor-pointer text-gray-600 hover:text-[#5B21B6] transition-colors duration-200" />
+        <Link
+          href="/kiosk"
+          className="flex items-center gap-2 hover:text-[#bb965f]"
+        >
+          {/* <ShoppingCart className="cursor-pointer text-gray-600 hover:text-[#5B21B6] transition-colors duration-200" /> */}
+          Catalog
+          <GrCatalog />
         </Link>
       </div>
 

@@ -53,16 +53,16 @@ export default function PromoSection() {
             </p>
 
             {/* Price highlight */}
-            <div className="flex items-center gap-4">
+            {/* <div className="flex items-center gap-4">
               <span className="text-2xl font-bold text-[#0F0F0F]">$199.00</span>
               <span className="text-sm text-gray-400 line-through">
                 $249.00
               </span>
-            </div>
+            </div> */}
 
             {/* CTA */}
             <Link
-              href="#"
+              href="/kiosk"
               className="inline-block bg-[#A38F7B] text-white px-6 py-3 rounded-full hover:bg-[#8E7A66] transition"
             >
               Shop Now

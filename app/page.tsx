@@ -1,5 +1,10 @@
-import KioskPage from "./kiosk/page";
+import MainLayout from "./better-baby/layout";
+import WebHome from "./better-baby/page";
 
 export default function Home() {
-  return <KioskPage />;
+  return (
+    <MainLayout>
+      <WebHome />
+    </MainLayout>
+  );
 }

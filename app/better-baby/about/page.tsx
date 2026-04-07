@@ -9,7 +9,7 @@ export default function AboutPageAnimated() {
   return (
     <main className="bg-white text-gray-800 font-sans">
       {/* Hero Section */}
-      <section className="relative w-full h-[70vh] flex items-center justify-center overflow-hidden">
+      {/* <section className="relative w-full h-[40vh] flex items-center justify-center overflow-hidden">
         <Image
           src="/about.webp"
           alt="BetterBaby Hero"
@@ -22,10 +22,39 @@ export default function AboutPageAnimated() {
           transition={{ duration: 1 }}
           className="absolute text-center px-6 md:px-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-white">
             About BetterBaby
           </h1>
           <p className="text-gray-700 text-lg md:text-xl max-w-2xl mx-auto">
+            Premium baby products crafted with love, comfort, and style for your
+            little ones.
+          </p>
+        </motion.div>
+      </section> */}
+
+      <section className="relative w-full h-[40vh] flex items-center justify-center overflow-hidden">
+        <Image
+          src="/about.webp"
+          alt="About Hero"
+          fill
+          className="object-cover"
+          priority
+        />
+
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/40"></div>
+
+        {/* Content */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="relative z-10 text-center px-6 text-white"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            About BetterBaby
+          </h1>
+          <p className="max-w-xl mx-auto text-white/90">
             Premium baby products crafted with love, comfort, and style for your
             little ones.
           </p>

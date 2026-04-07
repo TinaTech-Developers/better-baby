@@ -2,27 +2,29 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { PersonStandingIcon } from "lucide-react";
 
 const testimonials = [
   {
-    name: "Jane Doe",
-    role: "Small Business Owner",
+    name: "Tinotenda Phiri",
+    role: "Parent",
     message:
-      "This service completely transformed my business! Highly recommend.",
-    avatar: "/avatars/jane.jpg",
+      "This service transformed our daily routine. The team was attentive and delivered beyond our expectations.",
+    avatar: "/icon.jpg",
   },
   {
     name: "John Smith",
-    role: "Entrepreneur",
+    role: "Parent",
     message:
       "Professional, fast, and reliable. The results speak for themselves.",
-    avatar: "/avatars/john.jpg",
+    avatar: "/icon.jpg",
   },
   {
     name: "Emily Johnson",
-    role: "Freelancer",
-    message: "I can't imagine going back. The team exceeded all expectations!",
-    avatar: "/avatars/emily.jpg",
+    role: "Parent",
+    message:
+      "This is hands down the best experience I've had. Highly recommended!",
+    avatar: "/icon.jpg",
   },
 ];
 
